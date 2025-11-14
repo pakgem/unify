@@ -430,28 +430,56 @@
   function scheduleCookieLaw() {
     const domainScript = "01960838-72b8-7262-aeab-539642590360";
     const loadOneTrust = () => {
-      if (window.Optanon && window.OptanonWrapperLoaded) {
+      if (window.OneTrustDeferredLoaded) {
         window.OptanonWrapper && window.OptanonWrapper();
         return;
       }
 
-      const autoBlock = document.createElement("script");
-      autoBlock.type = "text/javascript";
-      autoBlock.src =
-        "https://cdn.cookielaw.org/consent/" + domainScript + "/OtAutoBlock.js";
+      const appendSdk = () => {
+        const sdk = document.createElement("script");
+        sdk.src = "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js";
+        sdk.type = "text/javascript";
+        sdk.charset = "UTF-8";
+        sdk.setAttribute("data-domain-script", domainScript);
 
-      const sdk = document.createElement("script");
-      sdk.src = "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js";
-      sdk.type = "text/javascript";
-      sdk.charset = "UTF-8";
-      sdk.setAttribute("data-domain-script", domainScript);
+        sdk.onload = () => {
+          window.OptanonWrapper && window.OptanonWrapper();
+        };
 
-      sdk.onload = () => {
-        window.OptanonWrapper && window.OptanonWrapper();
+        document.head.appendChild(sdk);
       };
 
-      document.head.appendChild(autoBlock);
-      document.head.appendChild(sdk);
+      const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLScriptElement.prototype,
+        "src"
+      );
+      const canLoadAutoBlock = !descriptor || descriptor.configurable;
+
+      if (canLoadAutoBlock) {
+        try {
+          const autoBlock = document.createElement("script");
+          autoBlock.type = "text/javascript";
+          autoBlock.src =
+            "https://cdn.cookielaw.org/consent/" +
+            domainScript +
+            "/OtAutoBlock.js";
+          autoBlock.onerror = () => {
+            appendSdk();
+          };
+          autoBlock.onload = () => {
+            appendSdk();
+          };
+          document.head.appendChild(autoBlock);
+        } catch (error) {
+          console.warn("OneTrust AutoBlock failed, loading SDK only", error);
+          appendSdk();
+        }
+      } else {
+        console.warn("Skipping OneTrust AutoBlock (src not configurable)");
+        appendSdk();
+      }
+
+      window.OneTrustDeferredLoaded = true;
     };
 
     window.OptanonWrapper = window.OptanonWrapper || function () {};
@@ -462,7 +490,6 @@
 
     setTimeout(loadOneTrust, 4000);
   }
-
   function scheduleDefaultPixel() {
     let hasLoaded = false;
     const loadPixel = () => {
