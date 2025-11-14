@@ -511,6 +511,27 @@
       scheduleLoad(true, 500, 2500);
     }
   }
+
+  function waitForConsent(callback, timeout = 6000) {
+    const start = Date.now();
+    const check = () => {
+      const hasOneTrustData =
+        typeof window.OptanonActiveGroups === "string" ||
+        typeof window.OnetrustActiveGroups === "string" ||
+        (typeof document !== "undefined" &&
+          document.cookie &&
+          document.cookie.indexOf("OptanonConsent") !== -1);
+
+      if (hasOneTrustData) {
+        callback();
+      } else if (Date.now() - start > timeout) {
+        callback();
+      } else {
+        setTimeout(check, 200);
+      }
+    };
+    check();
+  }
   function scheduleDefaultPixel() {
     let hasLoaded = false;
     const loadPixel = () => {
@@ -570,31 +591,52 @@
       document.head.appendChild(script);
     };
 
-    const waitForConsent = (callback, timeout = 6000) => {
-      const start = Date.now();
-      const check = () => {
-        const hasOneTrustData =
-          typeof window.OptanonActiveGroups === "string" ||
-          typeof window.OnetrustActiveGroups === "string" ||
-          document.cookie.includes("OptanonConsent");
-
-        if (hasOneTrustData) {
-          callback();
-        } else if (Date.now() - start > timeout) {
-          callback();
-        } else {
-          setTimeout(check, 200);
-        }
-      };
-      check();
-    };
-
     waitForConsent(() => {
       UnifyLoadUtils.runAfterInteraction(() =>
         UnifyLoadUtils.runWhenIdle(injectGtm, 1500)
       );
 
       setTimeout(injectGtm, 7000);
+    });
+  }
+
+  function scheduleGtagMeasurement() {
+    const measurementId = "G-FJ9R7F6WZJ";
+    let hasLoaded = false;
+
+    const injectGtag = () => {
+      if (hasLoaded) return;
+      hasLoaded = true;
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        window.dataLayer.push(arguments);
+      }
+      window.gtag = window.gtag || gtag;
+
+      if (!document.querySelector("script[data-gtag-measurement]")) {
+        const script = document.createElement("script");
+        script.async = true;
+        script.src =
+          "https://www.googletagmanager.com/gtag/js?id=" + measurementId;
+        script.setAttribute("data-gtag-measurement", measurementId);
+        document.head.appendChild(script);
+      }
+
+      window.gtag("js", new Date());
+      window.gtag("config", measurementId);
+    };
+
+    waitForConsent(() => {
+      if (
+        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+        typeof UnifyLoadUtils.runWhenIdle === "function"
+      ) {
+        UnifyLoadUtils.runAfterInteraction(() =>
+          UnifyLoadUtils.runWhenIdle(injectGtag, 2000)
+        );
+      }
+      setTimeout(injectGtag, 9000);
     });
   }
 
@@ -757,6 +799,7 @@
   scheduleCookieLaw();
   scheduleDefaultPixel();
   scheduleGtmContainer();
+  scheduleGtagMeasurement();
   scheduleUnifyTag();
   setupSegmentAnalytics();
   setupTwitterPixel();
