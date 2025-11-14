@@ -829,8 +829,10 @@
     };
 
     onConsent(CONSENT_GROUPS.marketing, () => {
-      const idleDelay = isMobileViewport() ? 4000 : 1500;
-      const fallbackDelay = isMobileViewport() ? 15000 : 9000;
+      const mobile = isMobileViewport();
+      const idleDelay = mobile ? 6000 : 2000;
+      const fallbackDelay = mobile ? 18000 : 10000;
+
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
@@ -839,6 +841,7 @@
           UnifyLoadUtils.runWhenIdle(loadClarity, idleDelay)
         );
       }
+
       setTimeout(loadClarity, fallbackDelay);
     });
   }
@@ -874,8 +877,10 @@
     };
 
     onConsent(CONSENT_GROUPS.marketing, () => {
-      const idleDelay = isMobileViewport() ? 5000 : 2000;
-      const fallbackDelay = isMobileViewport() ? 16000 : 10000;
+      const mobile = isMobileViewport();
+      const idleDelay = mobile ? 6000 : 2000;
+      const fallbackDelay = mobile ? 18000 : 11000;
+
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
@@ -884,6 +889,7 @@
           UnifyLoadUtils.runWhenIdle(loadBing, idleDelay)
         );
       }
+
       setTimeout(loadBing, fallbackDelay);
     });
   }
@@ -927,8 +933,10 @@
     };
 
     onConsent(CONSENT_GROUPS.performance, () => {
-      const idleDelay = isMobileViewport() ? 4000 : 1500;
-      const fallbackDelay = isMobileViewport() ? 14000 : 8000;
+      const mobile = isMobileViewport();
+      const idleDelay = mobile ? 5000 : 1500;
+      const fallbackDelay = mobile ? 16000 : 9000;
+
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
@@ -937,6 +945,7 @@
           UnifyLoadUtils.runWhenIdle(loadAmplitude, idleDelay)
         );
       }
+
       setTimeout(loadAmplitude, fallbackDelay);
     });
   }
@@ -1078,16 +1087,22 @@
     };
 
     onConsent(CONSENT_GROUPS.marketing, () => {
+      const mobile = isMobileViewport();
+      const idleDelay = mobile ? 6000 : 2000;
+      const fallbackDelay = mobile ? 20000 : 11000;
+
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
       ) {
         UnifyLoadUtils.runAfterInteraction(() =>
-          UnifyLoadUtils.runWhenIdle(bootstrapSegment, 2000)
+          UnifyLoadUtils.runWhenIdle(bootstrapSegment, idleDelay)
         );
       } else {
         bootstrapSegment();
       }
+
+      setTimeout(bootstrapSegment, fallbackDelay);
     });
   }
 
