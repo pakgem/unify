@@ -131,6 +131,16 @@
   };
 
   const consentWatchers = [];
+  const TRACKING_IDS =
+    (window.__UNIFY_TRACKING_IDS = window.__UNIFY_TRACKING_IDS || {});
+
+  const isMobileViewport = () => {
+    if (typeof window === "undefined") return false;
+    if (window.matchMedia) {
+      return window.matchMedia("(max-width: 767px)").matches;
+    }
+    return window.innerWidth < 768;
+  };
 
   function getGrantedConsentGroups() {
     const source =
@@ -728,7 +738,7 @@
       document.head.appendChild(script);
     };
 
-    onConsent(CONSENT_GROUPS.marketing, () => {
+    onConsent(CONSENT_GROUPS.performance, () => {
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
@@ -768,7 +778,7 @@
       window.gtag("config", measurementId);
     };
 
-    onConsent(CONSENT_GROUPS.marketing, () => {
+    onConsent(CONSENT_GROUPS.performance, () => {
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
@@ -778,6 +788,150 @@
         );
       }
       setTimeout(injectGtag, 9000);
+    });
+  }
+
+  function scheduleClarityTracking() {
+    const loadClarity = () => {
+      const clarityId = TRACKING_IDS.clarity;
+      if (!clarityId) {
+        console.warn("Clarity project ID missing in __UNIFY_TRACKING_IDS.clarity");
+        return;
+      }
+      if (window.__clarityInitialized) return;
+      window.__clarityInitialized = true;
+      (function (c, l, a, r, i, t, y) {
+        c[a] =
+          c[a] ||
+          function () {
+            (c[a].q = c[a].q || []).push(arguments);
+          };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = "https://www.clarity.ms/tag/" + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      })(window, document, "clarity", "script", clarityId);
+    };
+
+    onConsent(CONSENT_GROUPS.marketing, () => {
+      const idleDelay = isMobileViewport() ? 4000 : 1500;
+      const fallbackDelay = isMobileViewport() ? 15000 : 9000;
+      if (
+        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+        typeof UnifyLoadUtils.runWhenIdle === "function"
+      ) {
+        UnifyLoadUtils.runAfterInteraction(() =>
+          UnifyLoadUtils.runWhenIdle(loadClarity, idleDelay)
+        );
+      }
+      setTimeout(loadClarity, fallbackDelay);
+    });
+  }
+
+  function scheduleBingTracking() {
+    const loadBing = () => {
+      const bingTag = TRACKING_IDS.bing;
+      if (!bingTag) {
+        console.warn("Bing UET tag ID missing in __UNIFY_TRACKING_IDS.bing");
+        return;
+      }
+      if (window.__bingTrackingLoaded) return;
+      window.__bingTrackingLoaded = true;
+      (function (w, d, t, r, u) {
+        var f, n, i;
+        w[u] = w[u] || [];
+        f = function () {
+          var o = { ti: bingTag };
+          o.q = w[u];
+          w[u] = new UET(o);
+          w[u].push("pageLoad");
+        };
+        n = d.createElement(t);
+        n.src = r;
+        n.async = 1;
+        n.onload = n.onreadystatechange = function () {
+          var s = this.readyState;
+          if (!s || s === "loaded" || s === "complete") {
+            f();
+            n.onload = n.onreadystatechange = null;
+          }
+        };
+        i = d.getElementsByTagName(t)[0];
+        i.parentNode.insertBefore(n, i);
+      })(window, document, "script", "https://bat.bing.com/bat.js", "uetq");
+    };
+
+    onConsent(CONSENT_GROUPS.marketing, () => {
+      const idleDelay = isMobileViewport() ? 5000 : 2000;
+      const fallbackDelay = isMobileViewport() ? 16000 : 10000;
+      if (
+        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+        typeof UnifyLoadUtils.runWhenIdle === "function"
+      ) {
+        UnifyLoadUtils.runAfterInteraction(() =>
+          UnifyLoadUtils.runWhenIdle(loadBing, idleDelay)
+        );
+      }
+      setTimeout(loadBing, fallbackDelay);
+    });
+  }
+
+  function scheduleAmplitudeAnalytics() {
+    const loadAmplitude = () => {
+      const apiKey = TRACKING_IDS.amplitude;
+      if (!apiKey) {
+        console.warn(
+          "Amplitude API key missing in __UNIFY_TRACKING_IDS.amplitude"
+        );
+        return;
+      }
+      if (window.__amplitudeInitialized) return;
+      window.__amplitudeInitialized = true;
+      UnifyLoadUtils.loadScriptOnce(
+        "https://cdn.amplitude.com/libs/analytics-browser-gtm-2.8.0-min.js",
+        { async: true }
+      )
+        .then(() => {
+          if (
+            window.amplitude &&
+            typeof window.amplitude.getInstance === "function"
+          ) {
+            window.amplitude.getInstance().init(apiKey, undefined, {
+              defaultTracking: {
+                pageViews: true,
+              },
+              trackingOptions: {
+                ipAddress: false,
+              },
+            });
+          } else if (
+            window.amplitude &&
+            typeof window.amplitude.init === "function"
+          ) {
+            window.amplitude.init(apiKey);
+          } else {
+            console.warn("Amplitude SDK loaded but global API unavailable.");
+          }
+        })
+        .catch((error) => {
+          window.__amplitudeInitialized = false;
+          console.warn("Failed to load Amplitude SDK", error);
+        });
+    };
+
+    onConsent(CONSENT_GROUPS.performance, () => {
+      const idleDelay = isMobileViewport() ? 4000 : 1500;
+      const fallbackDelay = isMobileViewport() ? 14000 : 8000;
+      if (
+        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+        typeof UnifyLoadUtils.runWhenIdle === "function"
+      ) {
+        UnifyLoadUtils.runAfterInteraction(() =>
+          UnifyLoadUtils.runWhenIdle(loadAmplitude, idleDelay)
+        );
+      }
+      setTimeout(loadAmplitude, fallbackDelay);
     });
   }
 
@@ -960,6 +1114,9 @@
   scheduleDefaultPixel();
   scheduleGtmContainer();
   scheduleGtagMeasurement();
+  scheduleClarityTracking();
+  scheduleBingTracking();
+  scheduleAmplitudeAnalytics();
   scheduleUnifyTag();
   setupSegmentAnalytics();
   setupTwitterPixel();
