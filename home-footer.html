@@ -1,21 +1,27 @@
 <!-- ================= Core Experience Libraries ================= -->
 <script src="https://cdn.plyr.io/3.7.2/plyr.js" defer></script>
-<script src="https://unpkg.com/split-type@0.3.4/umd/index.min.js" defer></script>
-<script defer src="JS/home.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/pakgem/unify@v1.5.0/JS/home.js"></script>
 
 <!-- ================= Marketing & Lifecycle Platforms ================= -->
 <script>
   (function (utils) {
     const loadDefaultForm = () => {
       window.__default__ = { team_id: 169, form_id: 734318 };
+      if (document.querySelector("script[data-default-form-loader]")) return;
       var script = document.createElement("script");
       script.async = true;
+      script.setAttribute("data-default-form-loader", "true");
       script.src = "https://import-cdn.default.com/";
       document.head.appendChild(script);
     };
 
-    if (utils && typeof utils.runAfterInteraction === "function") {
-      utils.runAfterInteraction(loadDefaultForm);
+    if (
+      utils &&
+      typeof utils.runAfterInteraction === "function" &&
+      typeof utils.runWhenIdle === "function"
+    ) {
+      utils.runAfterInteraction(() => utils.runWhenIdle(loadDefaultForm, 1200));
+      setTimeout(loadDefaultForm, 6000);
     } else {
       loadDefaultForm();
     }
@@ -71,8 +77,13 @@
       vector.load("f5dcb697-f6c6-4c88-b831-1e60b4254820");
     };
 
-    if (utils && typeof utils.runAfterInteraction === "function") {
-      utils.runAfterInteraction(loadVector);
+    if (
+      utils &&
+      typeof utils.runAfterInteraction === "function" &&
+      typeof utils.runWhenIdle === "function"
+    ) {
+      utils.runAfterInteraction(() => utils.runWhenIdle(loadVector, 2000));
+      setTimeout(loadVector, 8000);
     } else {
       loadVector();
     }

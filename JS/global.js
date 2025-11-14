@@ -463,6 +463,33 @@
     setTimeout(loadOneTrust, 4000);
   }
 
+  function scheduleDefaultPixel() {
+    let hasLoaded = false;
+    const loadPixel = () => {
+      if (hasLoaded) return;
+      hasLoaded = true;
+      if (document.querySelector("script[data-default-pixel]")) return;
+
+      const script = document.createElement("script");
+      script.async = true;
+      script.defer = true;
+      script.src = "https://pixel-cdn.default.com";
+      script.setAttribute("data-default-pixel", "true");
+      document.head.appendChild(script);
+    };
+
+    if (
+      typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+      typeof UnifyLoadUtils.runWhenIdle === "function"
+    ) {
+      UnifyLoadUtils.runAfterInteraction(() =>
+        UnifyLoadUtils.runWhenIdle(loadPixel, 2000)
+      );
+    }
+
+    setTimeout(loadPixel, 7000);
+  }
+
   function scheduleGtmContainer() {
     const containerId = "GTM-5NKFVR3";
     const dataLayerName = "dataLayer";
@@ -680,6 +707,7 @@
   setupNavattic();
   scheduleBrowserTestPixel();
   scheduleCookieLaw();
+  scheduleDefaultPixel();
   scheduleGtmContainer();
   scheduleUnifyTag();
   setupSegmentAnalytics();
