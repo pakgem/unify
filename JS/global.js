@@ -133,6 +133,23 @@
   const consentWatchers = [];
   const TRACKING_IDS =
     (window.__UNIFY_TRACKING_IDS = window.__UNIFY_TRACKING_IDS || {});
+  const missingTrackingWarnings = new Set();
+
+  const getTrackingId = (key) => {
+    const value = TRACKING_IDS[key];
+    if (!value && !missingTrackingWarnings.has(key)) {
+      missingTrackingWarnings.add(key);
+      if (
+        typeof window !== "undefined" &&
+        /localhost|127\.0\.0\.1/.test(window.location.hostname)
+      ) {
+        console.info(
+          `[tracking] Optional ID "${key}" not provided in __UNIFY_TRACKING_IDS.`
+        );
+      }
+    }
+    return value;
+  };
 
   const isMobileViewport = () => {
     if (typeof window === "undefined") return false;
@@ -793,11 +810,8 @@
 
   function scheduleClarityTracking() {
     const loadClarity = () => {
-      const clarityId = TRACKING_IDS.clarity;
-      if (!clarityId) {
-        console.warn("Clarity project ID missing in __UNIFY_TRACKING_IDS.clarity");
-        return;
-      }
+      const clarityId = getTrackingId("clarity");
+      if (!clarityId) return;
       if (window.__clarityInitialized) return;
       window.__clarityInitialized = true;
       (function (c, l, a, r, i, t, y) {
@@ -831,11 +845,8 @@
 
   function scheduleBingTracking() {
     const loadBing = () => {
-      const bingTag = TRACKING_IDS.bing;
-      if (!bingTag) {
-        console.warn("Bing UET tag ID missing in __UNIFY_TRACKING_IDS.bing");
-        return;
-      }
+      const bingTag = getTrackingId("bing");
+      if (!bingTag) return;
       if (window.__bingTrackingLoaded) return;
       window.__bingTrackingLoaded = true;
       (function (w, d, t, r, u) {
@@ -879,13 +890,8 @@
 
   function scheduleAmplitudeAnalytics() {
     const loadAmplitude = () => {
-      const apiKey = TRACKING_IDS.amplitude;
-      if (!apiKey) {
-        console.warn(
-          "Amplitude API key missing in __UNIFY_TRACKING_IDS.amplitude"
-        );
-        return;
-      }
+      const apiKey = getTrackingId("amplitude");
+      if (!apiKey) return;
       if (window.__amplitudeInitialized) return;
       window.__amplitudeInitialized = true;
       UnifyLoadUtils.loadScriptOnce(
