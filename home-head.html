@@ -1,0 +1,98 @@
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.2/plyr.css" />
+
+<style>
+  .heading-rotate-wrap {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .rotate-text {
+    position: relative;
+    width: 100%;
+    opacity: 1;
+  }
+
+  html {
+    --plyr-color-main: white;
+    --plyr-tab-focus-color: transparent;
+    --plyr-video-control-color-hover: black;
+    --plyr-control-icon-size: 1.5em;
+    --plyr-range-thumb-height: 0px;
+    --plyr-range-track-height: 0.6em;
+  }
+
+  .plyr__control--overlaid {
+    color: black;
+  }
+
+  .plyr__volume {
+    width: auto;
+    min-width: auto;
+    max-width: auto;
+  }
+
+  .plyr {
+    width: 100%;
+    height: 100%;
+  }
+  .plyr video {
+    object-fit: cover;
+  }
+  .contain-video video {
+    object-fit: contain;
+  }
+
+  .hide-cover .plyr_cover {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hide-cover .plyr_cover-img {
+    transform: scale(1.4);
+  }
+</style>
+
+<script>
+  (function (w, d) {
+    const connection =
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
+    const prefersLowData = !!(
+      connection &&
+      (connection.saveData || /2g/.test(connection.effectiveType || ""))
+    );
+    const idleTimeout = prefersLowData ? 2500 : 1500;
+    const fallbackDelay = prefersLowData ? 800 : 0;
+
+    const injectDefault = function () {
+      if (w.__default__ && w.__default__.__loaded) {
+        return;
+      }
+      w.__default__ = { team_id: 169, form_id: 734318, __loaded: true };
+      var s = d.createElement("script");
+      s.async = true;
+      s.defer = true;
+      s.src = "https://import-cdn.default.com/";
+      d.head.appendChild(s);
+    };
+
+    const scheduleLoad = () => {
+      if (prefersLowData && "requestIdleCallback" in w) {
+        requestIdleCallback(injectDefault, { timeout: idleTimeout });
+      } else if (fallbackDelay) {
+        setTimeout(injectDefault, fallbackDelay);
+      } else {
+        injectDefault();
+      }
+    };
+
+    if (d.readyState === "complete" || d.readyState === "interactive") {
+      scheduleLoad();
+    } else {
+      w.addEventListener("load", scheduleLoad, { once: true });
+    }
+  })(window, document);
+</script>

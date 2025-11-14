@@ -1,0 +1,229 @@
+<script src="https://cdn.plyr.io/3.7.2/plyr.js"></script>
+
+<script>
+  !(function (e, r) {
+    try {
+      if (e.vector) {
+        console.log("Vector snippet included more than once.");
+        return;
+      }
+      const t = { q: [] };
+      ["load", "identify", "on"].forEach((method) => {
+        t[method] = function () {
+          t.q.push([method, Array.prototype.slice.call(arguments)]);
+        };
+      });
+      e.vector = t;
+
+      const loadVector = function () {
+        if (t.loaded) return;
+        const script = r.createElement("script");
+        script.type = "text/javascript";
+        script.async = true;
+        script.defer = true;
+        script.src = "https://cdn.vector.co/pixel.js";
+        const firstScript = r.getElementsByTagName("script")[0];
+        firstScript.parentNode.insertBefore(script, firstScript);
+        t.loaded = true;
+      };
+
+      if (window.innerWidth >= 768) {
+        loadVector();
+      } else if (document.readyState === "complete") {
+        setTimeout(loadVector, 2000);
+      } else {
+        window.addEventListener(
+          "load",
+          function () {
+            setTimeout(loadVector, 2000);
+          },
+          { once: true }
+        );
+      }
+    } catch (error) {
+      console.error("Error loading Vector:", error);
+    }
+  })(window, document);
+  vector.load("f5dcb697-f6c6-4c88-b831-1e60b4254820");
+</script>
+
+<script>
+  function setupSwiper() {
+    if (window.__homeSwiperInitialized) return;
+    if ($(".empty-state.w-dyn-empty").length) {
+      $(".section_related-items").hide();
+    }
+    if (typeof Swiper === "undefined") {
+      console.error("Swiper library not found.");
+      return;
+    }
+    window.__homeSwiperInitialized = true;
+    new Swiper("#basic-swiper", {
+      slidesPerView: 2.5,
+      slidesPerGroup: 1,
+      grabCursor: false,
+      a11y: false,
+      spaceBetween: 24,
+      allowTouchMove: true,
+      navigation: {
+        nextEl: "#right-button",
+        prevEl: "#left-button",
+      },
+      breakpoints: {
+        0: {
+          slidesPerView: 1,
+          slidesPerGroup: 1,
+          spaceBetween: 24,
+        },
+        480: {
+          slidesPerView: 1.3,
+          slidesPerGroup: 1,
+          spaceBetween: 24,
+        },
+        767: {
+          slidesPerView: 1.8,
+          slidesPerGroup: 1,
+          spaceBetween: 24,
+        },
+        992: {
+          slidesPerView: 2.5,
+          slidesPerGroup: 1,
+          spaceBetween: 24,
+        },
+      },
+    });
+  }
+
+  function setupPlyr() {
+    $(".plyr_component").each(function (index) {
+      let thisComponent = $(this);
+
+      // create plyr settings with autoplay explicitly disabled
+      let player = new Plyr(thisComponent.find(".plyr_video")[0], {
+        controls: ["play", "progress", "current-time", "mute", "fullscreen"],
+        resetOnEnd: true,
+        autoplay: false, // Disable autoplay explicitly
+        muted: false, // Ensure videos are not muted for silent autoplay
+      });
+      var anonymousId = getOrCreateAnonymousId();
+      // Listen to the 'play' event
+      player.on("play", function () {
+        // Send Segment track call when the video starts playing
+        analytics.track("Video Played");
+      });
+
+      // Ensure the video is paused on page load
+      setTimeout(() => {
+        if (!player.paused) {
+          player.pause();
+          thisComponent.removeClass("hide-cover");
+        }
+      }, 100); // Small timeout to ensure player state is checked after initialization
+
+      // Pause the video when the page becomes hidden and reset on visibility change
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) {
+          player.pause();
+        }
+      });
+
+      // custom video cover
+      thisComponent.find(".plyr_cover").on("click", function () {
+        player.play();
+      });
+
+      player.on("ended", (event) => {
+        thisComponent.removeClass("hide-cover");
+      });
+
+      // pause other playing videos when this one starts playing
+      player.on("play", (event) => {
+        $(".plyr_component").removeClass("hide-cover");
+        thisComponent.addClass("hide-cover");
+        let prevPlayingComponent = $(".plyr--playing")
+          .closest(".plyr_component")
+          .not(thisComponent);
+        if (prevPlayingComponent.length > 0) {
+          prevPlayingComponent.find(".plyr_pause-trigger")[0].click();
+        }
+      });
+
+      thisComponent.find(".plyr_pause-trigger").on("click", function () {
+        player.pause();
+      });
+
+      // exit full screen when video ends
+      player.on("ended", (event) => {
+        if (player.fullscreen.active) {
+          player.fullscreen.exit();
+        }
+      });
+
+      // set video to contain instead of cover when in full screen mode
+      player.on("enterfullscreen", (event) => {
+        thisComponent.addClass("contain-video");
+      });
+
+      player.on("exitfullscreen", (event) => {
+        thisComponent.removeClass("contain-video");
+      });
+
+      // autoplay video on click of .plyr_explore-cta
+      $(".hero_preview-vid").on("click", function () {
+        player.play();
+        thisComponent.addClass("hide-cover");
+      });
+
+      // stop video on click of .background-close
+      $(".background-close").on("click", function () {
+        player.pause();
+        thisComponent.removeClass("hide-cover");
+      });
+
+      // Add escape key listener for this video
+      $(document).on("keydown", function (e) {
+        // Check if Escape key is pressed and this video is currently playing
+        if (e.key === "Escape" && !player.paused) {
+          $(".background-close").click();
+          player.pause();
+          thisComponent.removeClass("hide-cover");
+        }
+      });
+    });
+  }
+
+  // Initialize Plyr immediately, delay Swiper until the user interacts
+  document.addEventListener("DOMContentLoaded", () => {
+    setupPlyr();
+
+    const interactionEvents = [
+      "click",
+      "touchstart",
+      "mousemove",
+      "scroll",
+      "keydown",
+    ];
+
+    let swiperInitialized = false;
+    const initSwiperOnInteraction = () => {
+      if (swiperInitialized) return;
+      swiperInitialized = true;
+      try {
+        setupSwiper();
+      } catch (error) {
+        console.error("Swiper initialization failed:", error);
+      }
+    };
+
+    interactionEvents.forEach((event) => {
+      window.addEventListener(
+        event,
+        () => initSwiperOnInteraction(),
+        { passive: true }
+      );
+    });
+
+    setTimeout(initSwiperOnInteraction, 5000);
+  });
+</script>
+
