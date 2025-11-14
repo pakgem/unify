@@ -429,7 +429,12 @@
 
   function scheduleCookieLaw() {
     const domainScript = "01960838-72b8-7262-aeab-539642590360";
-    const loadOneTrust = () => {
+    const hasExistingConsent = () =>
+      typeof document !== "undefined" &&
+      document.cookie &&
+      document.cookie.indexOf("OptanonConsent=") !== -1;
+
+    const loadOneTrust = (attemptAutoBlock) => {
       if (window.OneTrustDeferredLoaded) {
         window.OptanonWrapper && window.OptanonWrapper();
         return;
@@ -449,11 +454,12 @@
         document.head.appendChild(sdk);
       };
 
-      const descriptor = Object.getOwnPropertyDescriptor(
-        HTMLScriptElement.prototype,
-        "src"
-      );
-      const canLoadAutoBlock = !descriptor || descriptor.configurable;
+      const descriptor =
+        typeof HTMLScriptElement !== "undefined"
+          ? Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, "src")
+          : null;
+      const canLoadAutoBlock =
+        attemptAutoBlock && (!descriptor || descriptor.configurable);
 
       if (canLoadAutoBlock) {
         try {
@@ -484,11 +490,26 @@
 
     window.OptanonWrapper = window.OptanonWrapper || function () {};
 
-    UnifyLoadUtils.runAfterInteraction(() =>
-      UnifyLoadUtils.runWhenIdle(loadOneTrust, 1000)
-    );
+    const scheduleLoad = (attemptAutoBlock, idleDelay, fallbackDelay) => {
+      if (
+        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+        typeof UnifyLoadUtils.runWhenIdle === "function"
+      ) {
+        UnifyLoadUtils.runAfterInteraction(() =>
+          UnifyLoadUtils.runWhenIdle(
+            () => loadOneTrust(attemptAutoBlock),
+            idleDelay
+          )
+        );
+      }
+      setTimeout(() => loadOneTrust(attemptAutoBlock), fallbackDelay);
+    };
 
-    setTimeout(loadOneTrust, 4000);
+    if (hasExistingConsent()) {
+      scheduleLoad(false, 2500, 12000);
+    } else {
+      scheduleLoad(true, 500, 2500);
+    }
   }
   function scheduleDefaultPixel() {
     let hasLoaded = false;
