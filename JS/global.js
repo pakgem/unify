@@ -628,10 +628,11 @@
       setTimeout(loadOneTrust, fallbackDelay);
     };
 
+    const mobile = isMobileViewport();
     if (hasExistingConsent()) {
-      scheduleLoad(2500, 12000);
+      scheduleLoad(mobile ? 4500 : 2500, mobile ? 35000 : 20000);
     } else {
-      scheduleLoad(1500, 3500);
+      scheduleLoad(mobile ? 2500 : 1500, mobile ? 20000 : 9000);
     }
   }
 
@@ -721,11 +722,14 @@
       typeof UnifyLoadUtils.runWhenIdle === "function"
     ) {
       UnifyLoadUtils.runAfterInteraction(() =>
-        UnifyLoadUtils.runWhenIdle(loadPixel, 2000)
+        UnifyLoadUtils.runWhenIdle(
+          loadPixel,
+          isMobileViewport() ? 4000 : 2000
+        )
       );
     }
 
-    setTimeout(loadPixel, 7000);
+    setTimeout(loadPixel, isMobileViewport() ? 20000 : 9000);
   }
 
   function scheduleGtmContainer() {
@@ -761,15 +765,19 @@
     };
 
     onConsent(CONSENT_GROUPS.performance, () => {
+      const mobile = isMobileViewport();
+      const idleDelay = mobile ? 4500 : 1500;
+      const fallbackDelay = mobile ? 35000 : 20000;
+
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
       ) {
         UnifyLoadUtils.runAfterInteraction(() =>
-          UnifyLoadUtils.runWhenIdle(injectGtm, 1500)
+          UnifyLoadUtils.runWhenIdle(injectGtm, idleDelay)
         );
       }
-      setTimeout(injectGtm, 7000);
+      setTimeout(injectGtm, fallbackDelay);
     });
   }
 
@@ -801,15 +809,19 @@
     };
 
     onConsent(CONSENT_GROUPS.performance, () => {
+      const mobile = isMobileViewport();
+      const idleDelay = mobile ? 5000 : 2000;
+      const fallbackDelay = mobile ? 36000 : 22000;
+
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
       ) {
         UnifyLoadUtils.runAfterInteraction(() =>
-          UnifyLoadUtils.runWhenIdle(injectGtag, 2000)
+          UnifyLoadUtils.runWhenIdle(injectGtag, idleDelay)
         );
       }
-      setTimeout(injectGtag, 9000);
+      setTimeout(injectGtag, fallbackDelay);
     });
   }
 
@@ -835,8 +847,8 @@
 
     onConsent(CONSENT_GROUPS.marketing, () => {
       const mobile = isMobileViewport();
-      const idleDelay = mobile ? 6000 : 2000;
-      const fallbackDelay = mobile ? 18000 : 10000;
+      const idleDelay = mobile ? 7000 : 2200;
+      const fallbackDelay = mobile ? 40000 : 22000;
 
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
@@ -883,8 +895,8 @@
 
     onConsent(CONSENT_GROUPS.marketing, () => {
       const mobile = isMobileViewport();
-      const idleDelay = mobile ? 6000 : 2000;
-      const fallbackDelay = mobile ? 18000 : 11000;
+      const idleDelay = mobile ? 7500 : 2500;
+      const fallbackDelay = mobile ? 42000 : 23000;
 
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
@@ -939,8 +951,8 @@
 
     onConsent(CONSENT_GROUPS.performance, () => {
       const mobile = isMobileViewport();
-      const idleDelay = mobile ? 5000 : 1500;
-      const fallbackDelay = mobile ? 16000 : 9000;
+      const idleDelay = mobile ? 6000 : 1800;
+      const fallbackDelay = mobile ? 36000 : 18000;
 
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
