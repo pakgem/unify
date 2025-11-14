@@ -131,8 +131,8 @@
   };
 
   const consentWatchers = [];
-  const TRACKING_IDS =
-    (window.__UNIFY_TRACKING_IDS = window.__UNIFY_TRACKING_IDS || {});
+  const TRACKING_IDS = (window.__UNIFY_TRACKING_IDS =
+    window.__UNIFY_TRACKING_IDS || {});
   const missingTrackingWarnings = new Set();
 
   const getTrackingId = (key) => {
@@ -215,10 +215,12 @@
     }
   }
 
-  const GSAP_URL = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js";
+  const GSAP_URL =
+    "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js";
   const SCROLLTRIGGER_URL =
     "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.1/ScrollTrigger.min.js";
-  const SWIPER_URL = "https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js";
+  const SWIPER_URL =
+    "https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js";
 
   const loadGsapBundle = (() => {
     let promise = null;
@@ -248,13 +250,13 @@
         return Promise.resolve();
       }
       if (!promise) {
-        promise = UnifyLoadUtils.loadScriptOnce(SWIPER_URL, { async: true }).catch(
-          (error) => {
-            console.warn("Failed to load Swiper", error);
-            promise = null;
-            throw error;
-          }
-        );
+        promise = UnifyLoadUtils.loadScriptOnce(SWIPER_URL, {
+          async: true,
+        }).catch((error) => {
+          console.warn("Failed to load Swiper", error);
+          promise = null;
+          throw error;
+        });
       }
       return promise;
     };
@@ -629,7 +631,7 @@
     if (hasExistingConsent()) {
       scheduleLoad(2500, 12000);
     } else {
-      scheduleLoad(800, 3500);
+      scheduleLoad(1500, 3500);
     }
   }
 
@@ -645,7 +647,10 @@
             let attempts = 0;
             const check = () => {
               const hasDependencies =
-                window.gsap && window.ScrollTrigger && window.Cookies && window.$;
+                window.gsap &&
+                window.ScrollTrigger &&
+                window.Cookies &&
+                window.$;
 
               if (hasDependencies) {
                 callback();
@@ -964,7 +969,9 @@
           "stopAutoIdentify",
         ].reduce(function (t, e) {
           t[e] = function () {
-            return window.unify.push([e, [].slice.call(arguments)]), window.unify;
+            return (
+              window.unify.push([e, [].slice.call(arguments)]), window.unify
+            );
           };
           return t;
         }, {})
