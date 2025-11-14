@@ -190,6 +190,9 @@
       });
     };
 
+    // Ensure the primary hero video is ready immediately so first-click autoplay works.
+    initComponent(components[0]);
+
     if ("IntersectionObserver" in window) {
       const observer = new IntersectionObserver(
         (entries) => {
