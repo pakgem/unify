@@ -142,37 +142,6 @@
       elements.navLinks.forEach((l) => l.classList.remove("is--active"));
       elements.dropdowns.forEach((d) => d.classList.remove("w--open"));
     };
-
-    const activateLink = (link) => {
-      clearActiveStates();
-      link.classList.add("is--active");
-    };
-
-    const openDropdown = (dropdown) => {
-      dropdown.classList.add("w--open");
-    };
-
-    elements.navLinks.forEach((link) => {
-      link.addEventListener("mouseenter", () => {
-        clearTimeout(timeoutId);
-        activateLink(link);
-      });
-
-      link.addEventListener("mouseleave", () => {
-        timeoutId = setTimeout(clearActiveStates, 200);
-      });
-    });
-
-    elements.dropdowns.forEach((dropdown) => {
-      dropdown.addEventListener("mouseenter", () => {
-        clearTimeout(timeoutId);
-        openDropdown(dropdown);
-      });
-
-      dropdown.addEventListener("mouseleave", () => {
-        timeoutId = setTimeout(clearActiveStates, 200);
-      });
-    });
   }
 
   function initializeScrollBehavior() {
