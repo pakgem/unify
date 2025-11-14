@@ -52,6 +52,8 @@
       };
     })();
 
+    const scriptCache = new Map();
+
     const loadExternalScript = (src, attributes = {}) => {
       const script = document.createElement("script");
       script.src = src;
@@ -65,6 +67,36 @@
       });
       document.head.appendChild(script);
       return script;
+    };
+
+    const loadScriptOnce = (src, attributes = {}) => {
+      if (typeof document === "undefined") {
+        return Promise.reject(new Error("Document is not available."));
+      }
+      if (scriptCache.has(src)) {
+        return scriptCache.get(src);
+      }
+
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing && existing.dataset.loaded === "true") {
+        return Promise.resolve(existing);
+      }
+
+      const promise = new Promise((resolve, reject) => {
+        const script = loadExternalScript(src, attributes);
+        script.dataset.managedSrc = src;
+        script.onload = () => {
+          script.dataset.loaded = "true";
+          resolve(script);
+        };
+        script.onerror = (event) => {
+          scriptCache.delete(src);
+          reject(event);
+        };
+      });
+
+      scriptCache.set(src, promise);
+      return promise;
     };
 
     const lazyLoadScript = (
@@ -86,44 +118,130 @@
       runWhenIdle,
       runAfterInteraction,
       loadExternalScript,
+      loadScriptOnce,
       lazyLoadScript,
     };
   })();
 
   window.UnifyLoadUtils = UnifyLoadUtils;
 
-  document.addEventListener("DOMContentLoaded", function () {
-    const waitForDependencies = (callback, maxAttempts = 20) => {
-      let attempts = 0;
-      const check = () => {
-        const hasDependencies =
-          window.gsap &&
-          window.ScrollTrigger &&
-          window.Cookies &&
-          window.$ &&
-          window.analytics;
+  const CONSENT_GROUPS = {
+    performance: ["C0002"],
+    marketing: ["C0004"],
+  };
 
-        if (hasDependencies) {
-          callback();
-        } else if (attempts < maxAttempts) {
-          attempts++;
-          setTimeout(check, 100);
-        } else {
-          console.warn("Failed to load all required libraries");
+  const consentWatchers = [];
+
+  function getGrantedConsentGroups() {
+    const source =
+      (typeof window !== "undefined" &&
+        (window.OptanonActiveGroups || window.OnetrustActiveGroups)) ||
+      "";
+    return source.split(",").filter(Boolean);
+  }
+
+  function hasRequiredConsent(requiredGroups) {
+    if (!requiredGroups || !requiredGroups.length) {
+      return true;
+    }
+    const granted = getGrantedConsentGroups();
+    if (!granted.length) return false;
+    return requiredGroups.every((group) => granted.includes(group));
+  }
+
+  function notifyConsentWatchers() {
+    consentWatchers.forEach((watcher) => {
+      if (!watcher.fired && hasRequiredConsent(watcher.groups)) {
+        watcher.fired = true;
+        try {
+          watcher.callback();
+        } catch (error) {
+          console.warn("Consent watcher failed", error);
         }
-      };
-      check();
-    };
-
-    initializeForm();
-    waitForDependencies(() => {
-      gsap.registerPlugin(ScrollTrigger);
-      initializeNavigation();
-      initializeScrollBehavior();
-      initializeAnalytics();
-      initializeScrollAnimations();
-      initializeLinkedIn();
+      }
     });
+  }
+
+  function onConsent(requiredGroups, callback) {
+    const watcher = {
+      groups: requiredGroups || [],
+      callback,
+      fired: false,
+    };
+    consentWatchers.push(watcher);
+    if (hasRequiredConsent(watcher.groups)) {
+      watcher.fired = true;
+      callback();
+    }
+  }
+
+  function tryAttachConsentListener() {
+    if (window.__unifyConsentListenerAttached) return;
+    if (
+      window.OneTrust &&
+      typeof window.OneTrust.OnConsentChanged === "function"
+    ) {
+      window.__unifyConsentListenerAttached = true;
+      window.OneTrust.OnConsentChanged(function () {
+        notifyConsentWatchers();
+      });
+    }
+  }
+
+  const GSAP_URL = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js";
+  const SCROLLTRIGGER_URL =
+    "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.1/ScrollTrigger.min.js";
+  const SWIPER_URL = "https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js";
+
+  const loadGsapBundle = (() => {
+    let promise = null;
+    return () => {
+      if (window.gsap && window.ScrollTrigger) {
+        return Promise.resolve();
+      }
+      if (!promise) {
+        promise = UnifyLoadUtils.loadScriptOnce(GSAP_URL, { async: true })
+          .then(() =>
+            UnifyLoadUtils.loadScriptOnce(SCROLLTRIGGER_URL, { async: true })
+          )
+          .catch((error) => {
+            console.warn("Failed to load GSAP bundle", error);
+            promise = null;
+            throw error;
+          });
+      }
+      return promise;
+    };
+  })();
+
+  const loadSwiperBundle = (() => {
+    let promise = null;
+    return () => {
+      if (window.Swiper) {
+        return Promise.resolve();
+      }
+      if (!promise) {
+        promise = UnifyLoadUtils.loadScriptOnce(SWIPER_URL, { async: true }).catch(
+          (error) => {
+            console.warn("Failed to load Swiper", error);
+            promise = null;
+            throw error;
+          }
+        );
+      }
+      return promise;
+    };
+  })();
+
+  window.__UnifyLoadGsap = loadGsapBundle;
+  window.__UnifyLoadSwiper = loadSwiperBundle;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initializeForm();
+    initializeNavigation();
+    initializeScrollBehavior();
+    initializeLinkedIn();
+    maybeInitDesktopEnhancements();
   });
 
   function initializeNavigation() {
@@ -434,104 +552,123 @@
       document.cookie &&
       document.cookie.indexOf("OptanonConsent=") !== -1;
 
-    const loadOneTrust = (attemptAutoBlock) => {
+    const loadOneTrust = () => {
       if (window.OneTrustDeferredLoaded) {
-        window.OptanonWrapper && window.OptanonWrapper();
+        notifyConsentWatchers();
+        tryAttachConsentListener();
         return;
       }
 
-      const appendSdk = () => {
-        const sdk = document.createElement("script");
-        sdk.src = "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js";
-        sdk.type = "text/javascript";
-        sdk.charset = "UTF-8";
-        sdk.setAttribute("data-domain-script", domainScript);
-
-        sdk.onload = () => {
-          window.OptanonWrapper && window.OptanonWrapper();
-        };
-
-        document.head.appendChild(sdk);
+      const sdk = document.createElement("script");
+      sdk.src = "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js";
+      sdk.type = "text/javascript";
+      sdk.charset = "UTF-8";
+      sdk.setAttribute("data-domain-script", domainScript);
+      sdk.onload = () => {
+        window.OneTrustDeferredLoaded = true;
+        tryAttachConsentListener();
+        notifyConsentWatchers();
       };
 
-      const descriptor =
-        typeof HTMLScriptElement !== "undefined"
-          ? Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, "src")
-          : null;
-      const canLoadAutoBlock =
-        attemptAutoBlock && (!descriptor || descriptor.configurable);
-
-      if (canLoadAutoBlock) {
-        try {
-          const autoBlock = document.createElement("script");
-          autoBlock.type = "text/javascript";
-          autoBlock.src =
-            "https://cdn.cookielaw.org/consent/" +
-            domainScript +
-            "/OtAutoBlock.js";
-          autoBlock.onerror = () => {
-            appendSdk();
-          };
-          autoBlock.onload = () => {
-            appendSdk();
-          };
-          document.head.appendChild(autoBlock);
-        } catch (error) {
-          console.warn("OneTrust AutoBlock failed, loading SDK only", error);
-          appendSdk();
-        }
-      } else {
-        console.warn("Skipping OneTrust AutoBlock (src not configurable)");
-        appendSdk();
-      }
-
-      window.OneTrustDeferredLoaded = true;
+      document.head.appendChild(sdk);
     };
 
-    window.OptanonWrapper = window.OptanonWrapper || function () {};
+    const existingOptanonWrapper = window.OptanonWrapper;
+    window.OptanonWrapper = function () {
+      window.OneTrustDeferredLoaded = true;
+      tryAttachConsentListener();
+      notifyConsentWatchers();
+      if (typeof existingOptanonWrapper === "function") {
+        try {
+          existingOptanonWrapper();
+        } catch (error) {
+          console.warn("Existing OptanonWrapper threw an error", error);
+        }
+      }
+    };
 
-    const scheduleLoad = (attemptAutoBlock, idleDelay, fallbackDelay) => {
+    const scheduleLoad = (idleDelay, fallbackDelay) => {
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
       ) {
         UnifyLoadUtils.runAfterInteraction(() =>
-          UnifyLoadUtils.runWhenIdle(
-            () => loadOneTrust(attemptAutoBlock),
-            idleDelay
-          )
+          UnifyLoadUtils.runWhenIdle(loadOneTrust, idleDelay)
         );
       }
-      setTimeout(() => loadOneTrust(attemptAutoBlock), fallbackDelay);
+      setTimeout(loadOneTrust, fallbackDelay);
     };
 
     if (hasExistingConsent()) {
-      scheduleLoad(false, 2500, 12000);
+      scheduleLoad(2500, 12000);
     } else {
-      scheduleLoad(true, 500, 2500);
+      scheduleLoad(800, 3500);
     }
   }
 
-  function waitForConsent(callback, timeout = 6000) {
-    const start = Date.now();
-    const check = () => {
-      const hasOneTrustData =
-        typeof window.OptanonActiveGroups === "string" ||
-        typeof window.OnetrustActiveGroups === "string" ||
-        (typeof document !== "undefined" &&
-          document.cookie &&
-          document.cookie.indexOf("OptanonConsent") !== -1);
+  function maybeInitDesktopEnhancements() {
+    const desktopQuery = window.matchMedia
+      ? window.matchMedia("(min-width: 992px)")
+      : null;
 
-      if (hasOneTrustData) {
-        callback();
-      } else if (Date.now() - start > timeout) {
-        callback();
-      } else {
-        setTimeout(check, 200);
-      }
+    const loadDesktopLibraries = () => {
+      loadGsapBundle()
+        .then(() => {
+          const waitForGsap = (callback, maxAttempts = 20) => {
+            let attempts = 0;
+            const check = () => {
+              const hasDependencies =
+                window.gsap && window.ScrollTrigger && window.Cookies && window.$;
+
+              if (hasDependencies) {
+                callback();
+              } else if (attempts < maxAttempts) {
+                attempts++;
+                setTimeout(check, 100);
+              } else {
+                console.warn("Failed to load GSAP dependencies");
+              }
+            };
+            check();
+          };
+
+          waitForGsap(() => {
+            gsap.registerPlugin(ScrollTrigger);
+            initializeScrollAnimations();
+          });
+        })
+        .catch((error) => {
+          console.warn("Desktop enhancements failed to load", error);
+        });
     };
-    check();
+
+    if (!desktopQuery) {
+      loadDesktopLibraries();
+      return;
+    }
+
+    if (desktopQuery.matches) {
+      loadDesktopLibraries();
+    } else {
+      const handler = (event) => {
+        if (event.matches) {
+          loadDesktopLibraries();
+          if (desktopQuery.removeEventListener) {
+            desktopQuery.removeEventListener("change", handler);
+          } else if (desktopQuery.removeListener) {
+            desktopQuery.removeListener(handler);
+          }
+        }
+      };
+
+      if (desktopQuery.addEventListener) {
+        desktopQuery.addEventListener("change", handler);
+      } else if (desktopQuery.addListener) {
+        desktopQuery.addListener(handler);
+      }
+    }
   }
+
   function scheduleDefaultPixel() {
     let hasLoaded = false;
     const loadPixel = () => {
@@ -591,11 +728,15 @@
       document.head.appendChild(script);
     };
 
-    waitForConsent(() => {
-      UnifyLoadUtils.runAfterInteraction(() =>
-        UnifyLoadUtils.runWhenIdle(injectGtm, 1500)
-      );
-
+    onConsent(CONSENT_GROUPS.marketing, () => {
+      if (
+        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+        typeof UnifyLoadUtils.runWhenIdle === "function"
+      ) {
+        UnifyLoadUtils.runAfterInteraction(() =>
+          UnifyLoadUtils.runWhenIdle(injectGtm, 1500)
+        );
+      }
       setTimeout(injectGtm, 7000);
     });
   }
@@ -627,7 +768,7 @@
       window.gtag("config", measurementId);
     };
 
-    waitForConsent(() => {
+    onConsent(CONSENT_GROUPS.marketing, () => {
       if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
@@ -694,7 +835,11 @@
     const pageNameFull = document.title ? document.title.split("-")[0] : "";
     const pageNameTrimmed = pageNameFull ? pageNameFull.trim() : "";
 
-    (function () {
+    const bootstrapSegment = () => {
+      if (window.__segmentBootstrapped) {
+        initializeAnalytics();
+        return;
+      }
       try {
         if (!isBot()) {
           var analytics = (window.analytics = window.analytics || []);
@@ -762,13 +907,28 @@
             analytics.SNIPPET_VERSION = "4.15.3";
             analytics.load("sQrrlorDOdJXFEMEGP6ZD9EjtL9KTJ66");
           }
+          window.__segmentBootstrapped = true;
+          initializeAnalytics();
         } else {
           console.log("Bot detected, Segment analytics not initialized");
         }
       } catch (error) {
         console.warn("Error initializing Segment:", error);
       }
-    })();
+    };
+
+    onConsent(CONSENT_GROUPS.marketing, () => {
+      if (
+        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+        typeof UnifyLoadUtils.runWhenIdle === "function"
+      ) {
+        UnifyLoadUtils.runAfterInteraction(() =>
+          UnifyLoadUtils.runWhenIdle(bootstrapSegment, 2000)
+        );
+      } else {
+        bootstrapSegment();
+      }
+    });
   }
 
   function setupTwitterPixel() {
