@@ -427,6 +427,45 @@
     UnifyLoadUtils.runWhenIdle(loadBrowserTest, 2000);
   }
 
+  function scheduleGtmContainer() {
+    const containerId = "GTM-5NKFVR3";
+    const dataLayerName = "dataLayer";
+
+    window[dataLayerName] = window[dataLayerName] || [];
+    window[dataLayerName].push({
+      "gtm.start": Date.now(),
+      event: "gtm.js",
+      "gtm.delayed": true,
+    });
+
+    let hasLoaded = false;
+    const injectGtm = () => {
+      if (hasLoaded) return;
+      hasLoaded = true;
+
+      const script = document.createElement("script");
+      script.async = true;
+      script.src =
+        "https://www.googletagmanager.com/gtm.js?id=" +
+        containerId +
+        "&l=" +
+        dataLayerName;
+
+      window[dataLayerName].push({
+        event: "gtm.deferredLoad",
+        "gtm.loadTime": Date.now(),
+      });
+
+      document.head.appendChild(script);
+    };
+
+    UnifyLoadUtils.runAfterInteraction(() =>
+      UnifyLoadUtils.runWhenIdle(injectGtm, 1000)
+    );
+
+    setTimeout(injectGtm, 5000);
+  }
+
   function scheduleUnifyTag() {
     window.unify =
       window.unify ||
@@ -583,6 +622,7 @@
   setupLinkedInPixel();
   setupNavattic();
   scheduleBrowserTestPixel();
+  scheduleGtmContainer();
   scheduleUnifyTag();
   setupSegmentAnalytics();
   setupTwitterPixel();
