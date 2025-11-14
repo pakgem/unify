@@ -427,6 +427,42 @@
     UnifyLoadUtils.runWhenIdle(loadBrowserTest, 2000);
   }
 
+  function scheduleCookieLaw() {
+    const domainScript = "01960838-72b8-7262-aeab-539642590360";
+    const loadOneTrust = () => {
+      if (window.Optanon && window.OptanonWrapperLoaded) {
+        window.OptanonWrapper && window.OptanonWrapper();
+        return;
+      }
+
+      const autoBlock = document.createElement("script");
+      autoBlock.type = "text/javascript";
+      autoBlock.src =
+        "https://cdn.cookielaw.org/consent/" + domainScript + "/OtAutoBlock.js";
+
+      const sdk = document.createElement("script");
+      sdk.src = "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js";
+      sdk.type = "text/javascript";
+      sdk.charset = "UTF-8";
+      sdk.setAttribute("data-domain-script", domainScript);
+
+      sdk.onload = () => {
+        window.OptanonWrapper && window.OptanonWrapper();
+      };
+
+      document.head.appendChild(autoBlock);
+      document.head.appendChild(sdk);
+    };
+
+    window.OptanonWrapper = window.OptanonWrapper || function () {};
+
+    UnifyLoadUtils.runAfterInteraction(() =>
+      UnifyLoadUtils.runWhenIdle(loadOneTrust, 1000)
+    );
+
+    setTimeout(loadOneTrust, 4000);
+  }
+
   function scheduleGtmContainer() {
     const containerId = "GTM-5NKFVR3";
     const dataLayerName = "dataLayer";
@@ -459,11 +495,32 @@
       document.head.appendChild(script);
     };
 
-    UnifyLoadUtils.runAfterInteraction(() =>
-      UnifyLoadUtils.runWhenIdle(injectGtm, 1000)
-    );
+    const waitForConsent = (callback, timeout = 6000) => {
+      const start = Date.now();
+      const check = () => {
+        const hasOneTrustData =
+          typeof window.OptanonActiveGroups === "string" ||
+          typeof window.OnetrustActiveGroups === "string" ||
+          document.cookie.includes("OptanonConsent");
 
-    setTimeout(injectGtm, 5000);
+        if (hasOneTrustData) {
+          callback();
+        } else if (Date.now() - start > timeout) {
+          callback();
+        } else {
+          setTimeout(check, 200);
+        }
+      };
+      check();
+    };
+
+    waitForConsent(() => {
+      UnifyLoadUtils.runAfterInteraction(() =>
+        UnifyLoadUtils.runWhenIdle(injectGtm, 1500)
+      );
+
+      setTimeout(injectGtm, 7000);
+    });
   }
 
   function scheduleUnifyTag() {
@@ -622,6 +679,7 @@
   setupLinkedInPixel();
   setupNavattic();
   scheduleBrowserTestPixel();
+  scheduleCookieLaw();
   scheduleGtmContainer();
   scheduleUnifyTag();
   setupSegmentAnalytics();
