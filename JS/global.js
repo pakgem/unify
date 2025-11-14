@@ -616,23 +616,56 @@
       }
     };
 
-    const scheduleLoad = (idleDelay, fallbackDelay) => {
-      if (
+    const scheduleLoad = ({ idleDelay, fallbackDelay, gate = "interaction" }) => {
+      let triggered = false;
+      const run = () => {
+        if (triggered) return;
+        triggered = true;
+        if (
+          typeof UnifyLoadUtils.runWhenIdle === "function" &&
+          typeof UnifyLoadUtils.runAfterInteraction === "function"
+        ) {
+          UnifyLoadUtils.runWhenIdle(loadOneTrust, idleDelay);
+        } else {
+          setTimeout(loadOneTrust, idleDelay);
+        }
+      };
+
+      if (gate === "scroll" && typeof window !== "undefined") {
+        const handleScroll = () => {
+          window.removeEventListener("scroll", handleScroll);
+          run();
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+      } else if (
         typeof UnifyLoadUtils.runAfterInteraction === "function" &&
         typeof UnifyLoadUtils.runWhenIdle === "function"
       ) {
-        UnifyLoadUtils.runAfterInteraction(() =>
-          UnifyLoadUtils.runWhenIdle(loadOneTrust, idleDelay)
-        );
+        UnifyLoadUtils.runAfterInteraction(run);
+      } else {
+        run();
       }
-      setTimeout(loadOneTrust, fallbackDelay);
+
+      setTimeout(() => {
+        if (!triggered) {
+          loadOneTrust();
+        }
+      }, fallbackDelay);
     };
 
     const mobile = isMobileViewport();
     if (hasExistingConsent()) {
-      scheduleLoad(mobile ? 4500 : 2500, mobile ? 35000 : 20000);
+      scheduleLoad({
+        idleDelay: mobile ? 6000 : 3000,
+        fallbackDelay: mobile ? 45000 : 25000,
+        gate: "interaction",
+      });
     } else {
-      scheduleLoad(mobile ? 2500 : 1500, mobile ? 20000 : 9000);
+      scheduleLoad({
+        idleDelay: mobile ? 4000 : 2000,
+        fallbackDelay: mobile ? 40000 : 20000,
+        gate: "scroll",
+      });
     }
   }
 
