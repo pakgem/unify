@@ -1,18 +1,33 @@
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.2/plyr.css" />
 
 <style>
+  [js-line-animation] {
+    visibility: hidden;
+  }
+
+  .w--editor [js-line-animation] {
+    visibility: visible;
+  }
+
+  [js-line-animation] .line {
+    overflow: hidden;
+  }
+
   .heading-rotate-wrap {
     position: relative;
     overflow: hidden;
     display: flex;
-    justify-content: center;
-    align-items: center;
+    justify-content: center; /* Default for mobile, JS will override on larger screens */
+    align-items: center; /* Center vertically */
   }
 
   .rotate-text {
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    opacity: 1;
+    text-align: left; /* Default to left-align on larger screens */
+    opacity: 0; /* Start invisible */
   }
 
   html {
@@ -52,47 +67,11 @@
   .hide-cover .plyr_cover-img {
     transform: scale(1.4);
   }
+
+  [text-split] {
+    opacity: 0;
+  }
+  html.w-editor [text-split] {
+    opacity: 1;
+  }
 </style>
-
-<script>
-  (function (w, d) {
-    const connection =
-      navigator.connection ||
-      navigator.mozConnection ||
-      navigator.webkitConnection;
-    const prefersLowData = !!(
-      connection &&
-      (connection.saveData || /2g/.test(connection.effectiveType || ""))
-    );
-    const idleTimeout = prefersLowData ? 2500 : 1500;
-    const fallbackDelay = prefersLowData ? 800 : 0;
-
-    const injectDefault = function () {
-      if (w.__default__ && w.__default__.__loaded) {
-        return;
-      }
-      w.__default__ = { team_id: 169, form_id: 734318, __loaded: true };
-      var s = d.createElement("script");
-      s.async = true;
-      s.defer = true;
-      s.src = "https://import-cdn.default.com/";
-      d.head.appendChild(s);
-    };
-
-    const scheduleLoad = () => {
-      if (prefersLowData && "requestIdleCallback" in w) {
-        requestIdleCallback(injectDefault, { timeout: idleTimeout });
-      } else if (fallbackDelay) {
-        setTimeout(injectDefault, fallbackDelay);
-      } else {
-        injectDefault();
-      }
-    };
-
-    if (d.readyState === "complete" || d.readyState === "interactive") {
-      scheduleLoad();
-    } else {
-      w.addEventListener("load", scheduleLoad, { once: true });
-    }
-  })(window, document);
-</script>
