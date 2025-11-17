@@ -982,22 +982,10 @@
         });
     };
 
-    onConsent(CONSENT_GROUPS.performance, () => {
-      const mobile = isMobileViewport();
-      const idleDelay = mobile ? 6000 : 1800;
-      const fallbackDelay = mobile ? 36000 : 18000;
+    const fallbackDelay = isMobileViewport() ? 15000 : 8000;
 
-      if (
-        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
-        typeof UnifyLoadUtils.runWhenIdle === "function"
-      ) {
-        UnifyLoadUtils.runAfterInteraction(() =>
-          UnifyLoadUtils.runWhenIdle(loadAmplitude, idleDelay)
-        );
-      }
-
-      setTimeout(loadAmplitude, fallbackDelay);
-    });
+    loadAmplitude();
+    setTimeout(loadAmplitude, fallbackDelay);
   }
 
   function scheduleUnifyTag() {
