@@ -662,9 +662,9 @@
       });
     } else {
       scheduleLoad({
-        idleDelay: mobile ? 4000 : 2000,
+        idleDelay: mobile ? 3000 : 1500,
         fallbackDelay: mobile ? 40000 : 20000,
-        gate: "scroll",
+        gate: "interaction",
       });
     }
   }
