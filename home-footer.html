@@ -4,7 +4,12 @@
 
 <!-- ================= Marketing & Lifecycle Platforms ================= -->
 <script>
-  (function (utils) {
+  (function (utils, document) {
+    const hasDefaultForms = () =>
+      document && document.querySelector(".default-email_form");
+
+    if (!hasDefaultForms()) return;
+
     const loadDefaultForm = () => {
       window.__default__ = { team_id: 169, form_id: 734318 };
       if (document.querySelector("script[data-default-form-loader]")) return;
@@ -20,16 +25,16 @@
       typeof utils.runAfterInteraction === "function" &&
       typeof utils.runWhenIdle === "function"
     ) {
-      utils.runAfterInteraction(() => utils.runWhenIdle(loadDefaultForm, 1200));
-      setTimeout(loadDefaultForm, 6000);
+      utils.runAfterInteraction(() => utils.runWhenIdle(loadDefaultForm, 2000));
+      setTimeout(loadDefaultForm, 7000);
     } else {
       loadDefaultForm();
     }
-  })(window.UnifyLoadUtils || {});
+  })(window.UnifyLoadUtils || {}, document);
 </script>
 
 <script>
-  (function (utils) {
+  (function (utils, document) {
     const loadReb2b = () => {
       if (window.reb2b) return;
       window.reb2b = { loaded: true };
@@ -42,12 +47,25 @@
       firstScript.parentNode.insertBefore(script, firstScript);
     };
 
-    if (utils && typeof utils.runAfterInteraction === "function") {
-      utils.runAfterInteraction(loadReb2b);
+    const scheduleLoad = () => {
+      if (
+        utils &&
+        typeof utils.runAfterInteraction === "function" &&
+        typeof utils.runWhenIdle === "function"
+      ) {
+        utils.runAfterInteraction(() => utils.runWhenIdle(loadReb2b, 3000));
+        setTimeout(loadReb2b, 9000);
+      } else {
+        setTimeout(loadReb2b, 3000);
+      }
+    };
+
+    if (document.readyState === "complete") {
+      scheduleLoad();
     } else {
-      loadReb2b();
+      window.addEventListener("load", scheduleLoad, { once: true });
     }
-  })(window.UnifyLoadUtils || {});
+  })(window.UnifyLoadUtils || {}, document);
 </script>
 
 <script>
@@ -82,10 +100,10 @@
       typeof utils.runAfterInteraction === "function" &&
       typeof utils.runWhenIdle === "function"
     ) {
-      utils.runAfterInteraction(() => utils.runWhenIdle(loadVector, 2000));
-      setTimeout(loadVector, 8000);
+      utils.runAfterInteraction(() => utils.runWhenIdle(loadVector, 3500));
+      setTimeout(loadVector, 10000);
     } else {
-      loadVector();
+      setTimeout(loadVector, 3500);
     }
   })(window.UnifyLoadUtils || {});
 </script>

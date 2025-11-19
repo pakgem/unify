@@ -270,6 +270,7 @@
     initializeNavigation();
     initializeScrollBehavior();
     initializeLinkedIn();
+    trackGetStartedClicks();
     maybeInitDesktopEnhancements();
   });
 
@@ -325,32 +326,57 @@
     });
   }
 
-  function trackGetStartedClicks() {
-    try {
-      const getStartedButtons = document.querySelectorAll(".get-started");
+  const pendingGetStartedClicks = [];
+  let getStartedListenerAttached = false;
 
-      if (!getStartedButtons.length) {
-        return;
-      }
-
-      getStartedButtons.forEach((button) => {
-        button.addEventListener("click", function () {
-          if (
-            window.analytics &&
-            typeof window.analytics.track === "function"
-          ) {
-            analytics.track("Get Started Click", {
-              page_name: document.title
-                ? document.title.trim()
-                : "Unknown Page",
-              timestamp: new Date().toISOString(),
-            });
-          }
-        });
-      });
-    } catch (error) {
-      console.warn("Error setting up CTA tracking:", error);
+  function sendGetStartedEvent(payload) {
+    if (window.analytics && typeof window.analytics.track === "function") {
+      analytics.track("Get Started Click", payload);
+      return true;
     }
+    return false;
+  }
+
+  function buildGetStartedPayload(target) {
+    const fallbackName =
+      typeof target?.textContent === "string"
+        ? target.textContent.trim()
+        : undefined;
+    return {
+      page_name: document.title ? document.title.trim() : "Unknown Page",
+      timestamp: new Date().toISOString(),
+      cta_label: target?.getAttribute?.("data-cta-label") || fallbackName,
+    };
+  }
+
+  function flushPendingGetStartedClicks() {
+    if (!pendingGetStartedClicks.length) return;
+    const remaining = [];
+    pendingGetStartedClicks.forEach((payload) => {
+      if (!sendGetStartedEvent(payload)) {
+        remaining.push(payload);
+      }
+    });
+    pendingGetStartedClicks.length = 0;
+    if (remaining.length) {
+      pendingGetStartedClicks.push(...remaining);
+    }
+  }
+
+  function trackGetStartedClicks() {
+    if (getStartedListenerAttached) return;
+    getStartedListenerAttached = true;
+
+    document.addEventListener("click", (event) => {
+      const target = event.target?.closest
+        ? event.target.closest(".get-started")
+        : null;
+      if (!target) return;
+      const payload = buildGetStartedPayload(target);
+      if (!sendGetStartedEvent(payload)) {
+        pendingGetStartedClicks.push(payload);
+      }
+    });
   }
 
   function initializeAnalytics() {
@@ -396,7 +422,7 @@
         });
       });
 
-      trackGetStartedClicks();
+      flushPendingGetStartedClicks();
     } catch (error) {
       console.warn("Analytics error:", error);
     }
