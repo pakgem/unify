@@ -266,6 +266,7 @@
   window.__UnifyLoadSwiper = loadSwiperBundle;
 
   document.addEventListener("DOMContentLoaded", function () {
+    initializeUtmTracking();
     initializeForm();
     initializeNavigation();
     initializeScrollBehavior();
@@ -313,6 +314,108 @@
     handleScroll();
   }
 
+  function getStoredUtmString() {
+    try {
+      if (typeof window === "undefined" || !window.sessionStorage) return "";
+      return window.sessionStorage.getItem("utm_params") || "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function appendUtmStringToUrl(url, utmString) {
+    if (!url || !utmString) return url;
+    if (
+      !url.startsWith("/") &&
+      !url.startsWith("http://") &&
+      !url.startsWith("https://")
+    ) {
+      return url;
+    }
+    if (url.includes(utmString)) return url;
+    return url + (url.includes("?") ? "&" : "?") + utmString;
+  }
+
+  function initializeUtmTracking() {
+    if (typeof window === "undefined") return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const stored = getStoredUtmString();
+    const sessionParams = stored ? new URLSearchParams(stored) : null;
+
+    const utms = urlParams.toString()
+      ? urlParams
+      : sessionParams || new URLSearchParams();
+
+    if (!utms.toString()) return;
+
+    const utmString = utms.toString();
+
+    try {
+      if (window.sessionStorage) {
+        window.sessionStorage.setItem("utm_params", utmString);
+      }
+    } catch (error) {}
+
+    window.__UNIFY_UTM_STRING = utmString;
+
+    const processedAttr = "data-utm-processed";
+
+    function processForms(root) {
+      const forms = root.querySelectorAll(`form:not([${processedAttr}])`);
+      forms.forEach((form) => {
+        utms.forEach((value, key) => {
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.className = "utm-hidden-field";
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        });
+
+        const redirect = form.getAttribute("data-redirect");
+        if (redirect) {
+          form.setAttribute("data-redirect", appendUtmStringToUrl(redirect, utmString));
+        }
+
+        const action = form.getAttribute("action");
+        if (action) {
+          form.setAttribute("action", appendUtmStringToUrl(action, utmString));
+        }
+
+        form.setAttribute(processedAttr, "1");
+      });
+    }
+
+    function processLinks(root) {
+      const links = root.querySelectorAll(`a[href]:not([${processedAttr}])`);
+      links.forEach((a) => {
+        const href = a.getAttribute("href");
+        const updated = appendUtmStringToUrl(href, utmString);
+        if (!updated || updated === href) return;
+        a.setAttribute("href", updated);
+        a.setAttribute(processedAttr, "1");
+      });
+    }
+
+    processForms(document);
+    processLinks(document);
+
+    if (!document.body || typeof MutationObserver === "undefined") return;
+
+    const obs = new MutationObserver((mutations) => {
+      mutations.forEach((m) => {
+        m.addedNodes.forEach((node) => {
+          if (!node || node.nodeType !== 1) return;
+          processForms(node);
+          processLinks(node);
+        });
+      });
+    });
+
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+
   function initializeForm() {
     $(".default-email_form").on("submit", function (e) {
       e.preventDefault();
@@ -322,7 +425,13 @@
       document.cookie =
         "email=" + encodeURIComponent(emailValue) + ";path=/;max-age=86400;";
 
-      window.location.href = "/get-started";
+      var targetUrl = "/get-started";
+      var utmString = window.__UNIFY_UTM_STRING || getStoredUtmString();
+      if (utmString) {
+        targetUrl = appendUtmStringToUrl(targetUrl, utmString);
+      }
+
+      window.location.href = targetUrl;
     });
   }
 
