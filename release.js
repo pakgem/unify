@@ -193,15 +193,19 @@ class ReleaseManager {
     }
   }
 
-  pushChanges() {
+  pushChanges(version) {
     try {
       execSync("git push https://github.com/pakgem/unify.git main", {
         stdio: "inherit",
       });
-      execSync("git push https://github.com/pakgem/unify.git --tags", {
-        stdio: "inherit",
-      });
-      console.log(chalk.green(`✓ Pushed changes and tags to pakgem/unify`));
+      if (version) {
+        execSync(`git push https://github.com/pakgem/unify.git v${version}`, {
+          stdio: "inherit",
+        });
+      }
+      console.log(
+        chalk.green(`✓ Pushed changes and tag v${version} to pakgem/unify`)
+      );
     } catch (error) {
       console.error(chalk.red("Error pushing changes:", error.message));
       throw error;
@@ -314,7 +318,7 @@ class ReleaseManager {
       this.createTag(nextVersion, notes);
 
       // Push changes
-      this.pushChanges();
+      this.pushChanges(nextVersion);
 
       // Create GitHub release
       await this.createGitHubRelease(nextVersion, notes);
