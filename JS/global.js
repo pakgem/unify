@@ -1,6 +1,5 @@
 (function (window, document) {
   "use strict";
-
   const UnifyLoadUtils = (() => {
     const runWhenIdle = (callback, timeout = 1500) => {
       if ("requestIdleCallback" in window) {
@@ -375,7 +374,10 @@
 
         const redirect = form.getAttribute("data-redirect");
         if (redirect) {
-          form.setAttribute("data-redirect", appendUtmStringToUrl(redirect, utmString));
+          form.setAttribute(
+            "data-redirect",
+            appendUtmStringToUrl(redirect, utmString)
+          );
         }
 
         const action = form.getAttribute("action");
@@ -751,7 +753,11 @@
       }
     };
 
-    const scheduleLoad = ({ idleDelay, fallbackDelay, gate = "interaction" }) => {
+    const scheduleLoad = ({
+      idleDelay,
+      fallbackDelay,
+      gate = "interaction",
+    }) => {
       let triggered = false;
       const run = () => {
         if (triggered) return;
@@ -890,10 +896,7 @@
       typeof UnifyLoadUtils.runWhenIdle === "function"
     ) {
       UnifyLoadUtils.runAfterInteraction(() =>
-        UnifyLoadUtils.runWhenIdle(
-          loadPixel,
-          isMobileViewport() ? 4000 : 2000
-        )
+        UnifyLoadUtils.runWhenIdle(loadPixel, isMobileViewport() ? 4000 : 2000)
       );
     }
 
