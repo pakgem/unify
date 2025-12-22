@@ -1,0 +1,73 @@
+<style>
+  .heading-rotate-wrap {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center; /* Default for mobile, JS will override on larger screens */
+    align-items: center; /* Center vertically */
+  }
+
+  .rotate-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    text-align: left; /* Default to left-align on larger screens */
+    opacity: 0; /* Start invisible */
+  }
+
+  html {
+    --plyr-color-main: white;
+    --plyr-tab-focus-color: transparent;
+    --plyr-video-control-color-hover: black;
+    --plyr-control-icon-size: 1.5em;
+    --plyr-range-thumb-height: 0px;
+    --plyr-range-track-height: 0.6em;
+  }
+
+  .plyr__control--overlaid {
+    color: black;
+  }
+
+  .plyr__volume {
+    width: auto;
+    min-width: auto;
+    max-width: auto;
+  }
+
+  .plyr {
+    width: 100%;
+    height: 100%;
+  }
+  .plyr video {
+    object-fit: cover;
+  }
+  .contain-video video {
+    object-fit: contain;
+  }
+
+  .hide-cover .plyr_cover {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hide-cover .plyr_cover-img {
+    transform: scale(1.4);
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    .plyr video {
+      object-fit: cover;
+      transform: translateZ(0);
+    }
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>

@@ -1,0 +1,66 @@
+<!-- Please keep this css code to improve the font quality-->
+<style>
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .w-form-fail {
+    display: none !important;
+  }
+
+  .fade-out {
+    animation: fadeOut 1s forwards;
+  }
+  .fade-in {
+    opacity: 0;
+    animation: fadeIn 1s forwards;
+    display: block;
+  }
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .hidden {
+    display: none;
+  }
+
+  .button {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .sign-in-text {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    display: inline-block;
+  }
+
+  .product-link.hide-link {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .success-message {
+    display: none !important;
+  }
+
+  .default-email_form {
+    display: flex !important;
+  }
+  #ot-sdk-btn.ot-sdk-show-settings {
+    background-color: inherit !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    color: inherit !important;
+    align-content: center;
+    font-size: 0.875rem !important;
+  }
+</style>

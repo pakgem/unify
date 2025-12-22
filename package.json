@@ -1,0 +1,32 @@
+{
+  "name": "unify",
+  "version": "1.7.0",
+  "description": "Webflow JavaScript files for Unify",
+  "main": "index.js",
+  "scripts": {
+    "release": "node release.js",
+    "release:patch": "node release.js patch",
+    "release:minor": "node release.js minor",
+    "release:major": "node release.js major",
+    "release:prerelease": "node release.js prerelease",
+    "version": "node release.js version",
+    "changelog": "node release.js changelog",
+    "deploy": "node deploy.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pakgem/unify.git"
+  },
+  "keywords": [
+    "webflow",
+    "javascript",
+    "unify"
+  ],
+  "author": "pakgem",
+  "license": "MIT",
+  "devDependencies": {
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.6",
+    "semver": "^7.5.4"
+  }
+}
