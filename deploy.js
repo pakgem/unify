@@ -156,7 +156,9 @@ class DeployManager {
   async push() {
     try {
       console.log(chalk.blue("📤 Pushing to remote..."));
-      execSync("git push origin main", { stdio: "inherit" });
+      execSync("git push https://github.com/pakgem/unify.git main", {
+        stdio: "inherit",
+      });
       console.log(chalk.green("✓ Pushed to remote"));
     } catch (error) {
       console.error(chalk.red("Error pushing changes:", error.message));
@@ -237,4 +239,3 @@ if (require.main === module) {
 }
 
 module.exports = DeployManager;
-

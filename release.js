@@ -195,9 +195,15 @@ class ReleaseManager {
 
   pushChanges() {
     try {
-      execSync("git push origin main", { stdio: "inherit" });
-      execSync("git push --tags", { stdio: "inherit" });
-      console.log(chalk.green(`✓ Pushed changes and tags to remote`));
+      execSync("git push https://github.com/pakgem/unify.git main", {
+        stdio: "inherit",
+      });
+      execSync("git push https://github.com/pakgem/unify.git --tags", {
+        stdio: "inherit",
+      });
+      console.log(
+        chalk.green(`✓ Pushed changes and tags to pakgem/unify`)
+      );
     } catch (error) {
       console.error(chalk.red("Error pushing changes:", error.message));
       throw error;
@@ -418,4 +424,3 @@ if (require.main === module) {
 }
 
 module.exports = ReleaseManager;
-
