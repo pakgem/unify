@@ -201,9 +201,7 @@ class ReleaseManager {
       execSync("git push https://github.com/pakgem/unify.git --tags", {
         stdio: "inherit",
       });
-      console.log(
-        chalk.green(`✓ Pushed changes and tags to pakgem/unify`)
-      );
+      console.log(chalk.green(`✓ Pushed changes and tags to pakgem/unify`));
     } catch (error) {
       console.error(chalk.red("Error pushing changes:", error.message));
       throw error;
