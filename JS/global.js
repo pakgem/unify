@@ -1123,46 +1123,6 @@
     setTimeout(loadAmplitude, fallbackDelay);
   }
 
-  function scheduleUnifyTag() {
-    window.unify =
-      window.unify ||
-      Object.assign(
-        [],
-        [
-          "identify",
-          "page",
-          "startAutoPage",
-          "stopAutoPage",
-          "startAutoIdentify",
-          "stopAutoIdentify",
-        ].reduce(function (t, e) {
-          t[e] = function () {
-            return (
-              window.unify.push([e, [].slice.call(arguments)]), window.unify
-            );
-          };
-          return t;
-        }, {})
-      );
-
-    const injectUnifyTag = () => {
-      const script = document.createElement("script");
-      script.async = true;
-      script.src =
-        "https://tag.unifyintent.com/v1/AKUXjLHgk642jVe4ZNwfEK/script-staging.js";
-      script.setAttribute(
-        "data-api-key",
-        "wk_5fTtsDLJ_7vx9DsjPcr79yk4FweES727w59pxS8EJ"
-      );
-      script.id = "unifytag";
-      document.head.appendChild(script);
-    };
-
-    UnifyLoadUtils.runAfterInteraction(() =>
-      UnifyLoadUtils.runWhenIdle(injectUnifyTag, 2000)
-    );
-  }
-
   function setupSegmentAnalytics() {
     function isBot() {
       return (
@@ -1313,7 +1273,6 @@
   scheduleClarityTracking();
   scheduleBingTracking();
   scheduleAmplitudeAnalytics();
-  scheduleUnifyTag();
   setupSegmentAnalytics();
   setupTwitterPixel();
 })(window, document);
