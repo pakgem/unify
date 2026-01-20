@@ -627,20 +627,45 @@
 
   function getOrCreateAnonymousId() {
     try {
-      if (
-        typeof analytics === "undefined" ||
-        typeof analytics.user !== "function"
-      ) {
-        return null;
+      const cookieName = "anonymousId";
+      let id = null;
+
+      if (typeof document !== "undefined" && document.cookie) {
+        const cookieEntry = document.cookie
+          .split("; ")
+          .find((entry) => entry.startsWith(cookieName + "="));
+        if (cookieEntry) {
+          id = decodeURIComponent(cookieEntry.split("=").slice(1).join("="));
+        }
       }
 
-      let id = localStorage.getItem("segment_anonymous_id");
+      if (!id) {
+        try {
+          id = localStorage.getItem("segment_anonymous_id");
+        } catch (storageError) {
+          id = null;
+        }
+      }
+
+      if (!id && typeof analytics !== "undefined") {
+        if (typeof analytics.user === "function") {
+          id = analytics.user().anonymousId();
+        }
+      }
 
       if (!id) {
-        id = analytics.user().anonymousId();
-        console.log(id);
-        if (id) {
+        id = "anon_" + Math.random().toString(36).slice(2, 10);
+      }
+
+      if (id) {
+        try {
           localStorage.setItem("segment_anonymous_id", id);
+        } catch (storageError) {
+          // Storage can be blocked in some browsers.
+        }
+        if (typeof document !== "undefined") {
+          document.cookie =
+            cookieName + "=" + encodeURIComponent(id) + ";path=/;max-age=604800";
         }
       }
 
@@ -649,6 +674,10 @@
       console.warn("Anonymous ID error:", error);
       return null;
     }
+  }
+
+  if (typeof window.getOrCreateAnonymousId !== "function") {
+    window.getOrCreateAnonymousId = getOrCreateAnonymousId;
   }
 
   function setupLinkedInPixel() {
@@ -1270,7 +1299,6 @@
   setupNavattic();
   scheduleBrowserTestPixel();
   scheduleCookieLaw();
-  scheduleDefaultPixel();
   scheduleGtmContainer();
   scheduleGtagMeasurement();
   scheduleClarityTracking();

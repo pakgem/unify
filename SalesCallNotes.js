@@ -64,7 +64,18 @@ $(document).ready(function () {
   // Check if anonymousID exists; if not, handle it (log error, fallback, etc.)
   if (!anonymousID) {
     console.error("Anonymous ID not found.");
-    getOrCreateAnonymousId();
+    if (typeof getOrCreateAnonymousId === "function") {
+      anonymousID = getOrCreateAnonymousId();
+    }
+    if (!anonymousID) {
+      anonymousID = "user_" + Math.random().toString(36).slice(2, 9);
+    }
+    if (anonymousID) {
+      document.cookie =
+        "anonymousId=" +
+        encodeURIComponent(anonymousID) +
+        ";path=/;max-age=604800";
+    }
   }
 
   // Get the current API hit count for this user from localStorage

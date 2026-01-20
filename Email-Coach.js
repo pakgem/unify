@@ -129,8 +129,15 @@ $(document).ready(function () {
   // Check if anonymousID exists; if not, handle it (log error, fallback, etc.)
   if (!anonymousID) {
     console.error("Anonymous ID not found.");
-    anonymousID = getOrCreateAnonymousId();
-    setCookie("anonymousId", anonymousID, 7); // Set cookie with 7 days expiration
+    if (typeof getOrCreateAnonymousId === "function") {
+      anonymousID = getOrCreateAnonymousId();
+    }
+    if (!anonymousID) {
+      anonymousID = "user_" + Math.random().toString(36).slice(2, 9);
+    }
+    if (anonymousID) {
+      setCookie("anonymousId", anonymousID, 7); // Set cookie with 7 days expiration
+    }
   }
 
   // Get the current API hit count for this user from localStorage
@@ -215,25 +222,7 @@ $(document).ready(function () {
     checkAPILimit();
   }, 0);
 
-  $("#email-input").on("keydown", function (e) {
-    if (e.key === "Enter") {
-      e.preventDefault(); // Prevent the default behavior of Enter key
-
-      // Get the cursor position
-      var start = this.selectionStart;
-      var end = this.selectionEnd;
-
-      // Get the current value of the text area
-      var text = $(this).val();
-
-      // Insert a newline character at the cursor position
-      $(this).val(text.substring(0, start) + "\n" + text.substring(end));
-
-      // Move the cursor to the new position after the newline character
-      this.selectionStart = this.selectionEnd = start + 1;
-    }
-  });
-  var $emailInput = $("#email-input");
+  var $emailForm = $("#email-form");
   var $feedbackText = $(".feedback-text");
   var $loading = $(".loading");
   var ctx = document.getElementById("overallScoreChart").getContext("2d");
@@ -267,9 +256,37 @@ $(document).ready(function () {
     $resetFeedback.css("display", "none");
   });
 
+  function getEmailInputValue() {
+    var $field = $emailForm.find("textarea, input").first();
+    if (!$field.length) return "";
+    return $field.val();
+  }
+
+  if ($emailForm.length) {
+    $emailForm.on("keydown", "textarea", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault(); // Prevent the default behavior of Enter key
+
+        // Get the cursor position
+        var start = this.selectionStart;
+        var end = this.selectionEnd;
+
+        // Get the current value of the text area
+        var text = $(this).val();
+
+        // Insert a newline character at the cursor position
+        $(this).val(text.substring(0, start) + "\n" + text.substring(end));
+
+        // Move the cursor to the new position after the newline character
+        this.selectionStart = this.selectionEnd = start + 1;
+      }
+    });
+  }
+
   // Function to check if the input has value and toggle the disabled class
   function toggleFeedbackButtons() {
-    if ($emailInput.val().trim() !== "") {
+    var inputValue = getEmailInputValue();
+    if (typeof inputValue === "string" && inputValue.trim() !== "") {
       $(".get-feedback").removeClass("disabled");
     } else {
       $(".get-feedback").addClass("disabled");
@@ -279,10 +296,12 @@ $(document).ready(function () {
   // Initial check for the input value
   toggleFeedbackButtons();
 
-  // Listener for input change on #email-input
-  $emailInput.on("input", function () {
-    toggleFeedbackButtons();
-  });
+  // Listener for input change on the email form field
+  if ($emailForm.length) {
+    $emailForm.on("input", "textarea, input", function () {
+      toggleFeedbackButtons();
+    });
+  }
 
   // Event listener for each .get-feedback button
   $(document).on("click", ".get-feedback", function () {
@@ -302,7 +321,7 @@ $(document).ready(function () {
     $feedbackText.hide();
 
     // Get the value from the email input
-    var emailContent = $emailInput.val();
+    var emailContent = getEmailInputValue();
 
     // Make the API call
     $.ajax({
