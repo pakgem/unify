@@ -1,86 +1,89 @@
-<!-- ================= Core Experience Libraries ================= -->
-<script
-  src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/3.0.1/js.cookie.min.js"
-  defer
-></script>
+<!-- Please keep this css code to improve the font quality-->
+<style>
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-<!-- Core interaction libraries handled in JS/global.js -->
-<script src="https://cdn.jsdelivr.net/gh/pakgem/unify@v1.5.4/JS/global.js"></script>
+  .w-form-fail {
+    display: none !important;
+  }
 
-<!-- ================= Marketing & Lifecycle Platforms ================= -->
-<!-- Helper utilities handled in JS/global.js -->
-<!-- Start of HubSpot Embed Code -->
-<script
-  type="text/javascript"
-  id="hs-script-loader"
-  async
-  src="//js-na1.hs-scripts.com/24175735.js"
-></script>
-<!-- End of HubSpot Embed Code -->
+  .fade-out {
+    animation: fadeOut 1s forwards;
+  }
+  .fade-in {
+    opacity: 0;
+    animation: fadeIn 1s forwards;
+    display: block;
+  }
+  @keyframes fadeOut {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  .hidden {
+    display: none;
+  }
 
-<!-- LinkedIn Tracking Setup (handled in JS/global.js) -->
-<!-- Navattic script handled in JS/global.js -->
-<!-- ================= Application Behavior & UI Logic ================= -->
-<!-- Logic moved to JS/global.js -->
-<!-- ================= Consent & Compliance ================= -->
-<!-- OneTrust loader handled in JS/global.js -->
+  .button {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
 
-<!-- ================= Personalization & Data Enrichment ================= -->
-<script
-  defer
-  src="https://cdn.coframe.com/cf.min.js?project_id=670427d6dc1ce6f58de0205b"
-></script>
-<!-- Pixel CDN Default loader handled in JS/global.js -->
-<script
-  defer
-  src="https://tag.clearbitscripts.com/v1/pk_1326c5292f347bfa6e6680d70eb4e722/tags.js"
-></script>
+  .sign-in-text {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    display: inline-block;
+  }
 
-<!-- ================= Tag Management & Analytics ================= -->
-<!-- Google Tag Manager deferred via JS/global.js -->
-<!-- Google Analytics gtag handled in JS/global.js -->
+  .product-link.hide-link {
+    opacity: 0;
+    pointer-events: none;
+  }
 
-<!-- Testing data handled in JS/global.js -->
-<!-- Unify Tag Staging handled in JS/global.js -->
-<!-- Production Tag for uft tenant (currently deployed via google tag manager) -->
-<!-- <script async data-api-key="wk_5fTtsDLJ_7vx9DsjPcr79yk4FweES727w59pxS8EJ" id="unifytag" src="https://cdn.unifygtm.com/tag/v1/unify-tag-script.js" type="module"></script> -->
+  .success-message {
+    display: none !important;
+  }
 
-<!--Segment Analytics handled in JS/global.js -->
-<!-- Twitter conversion tracking base code is loaded via JS/global.js -->
-<!-- End Twitter conversion tracking base code -->
+  .default-email_form {
+    display: flex !important;
+  }
+  #ot-sdk-btn.ot-sdk-show-settings {
+    background-color: inherit !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    color: inherit !important;
+    align-content: center;
+    font-size: 0.875rem !important;
+  }
+  
+  body {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
 
-<!-- ================= Non-script Fallbacks & Metadata ================= -->
-<!-- LinkedIn Insight fallback -->
-<noscript>
-  <img
-    height="1"
-    width="1"
-    style="display: none"
-    alt=""
-    src="https://px.ads.linkedin.com/collect/?pid=6129522&fmt=gif"
-  />
-</noscript>
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  opacity: 0;
+}
 
-<!-- GTM Fallback -->
-<noscript>
-  <iframe
-    src="https://www.googletagmanager.com/ns.html?id=GTM-5NKFVR3"
-    height="0"
-    width="0"
-    style="display: none; visibility: hidden"
-  ></iframe>
-</noscript>
-
-<meta
-  name="google-site-verification"
-  content="D12SovDqF7VI5sCK7j7UiTixfUzyZuLjXty4ckeyVkc"
-/>
-
-<!-- OOH Reveal pixel -->
-<img
-  class="hide"
-  src="https://trkn.us/pixel/conv/ppt=25951;g=sitewide;gid=66240;ord=[uniqueid]"
-  height="0"
-  width="0"
-  border="0"
-/>
+@supports (-webkit-touch-callout: none) {
+  noscript iframe {
+    display: none !important;
+  }
+}
+</style>

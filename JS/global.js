@@ -1253,24 +1253,7 @@
       }
     };
 
-    onConsent(CONSENT_GROUPS.marketing, () => {
-      const mobile = isMobileViewport();
-      const idleDelay = mobile ? 6000 : 2000;
-      const fallbackDelay = mobile ? 20000 : 11000;
-
-      if (
-        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
-        typeof UnifyLoadUtils.runWhenIdle === "function"
-      ) {
-        UnifyLoadUtils.runAfterInteraction(() =>
-          UnifyLoadUtils.runWhenIdle(bootstrapSegment, idleDelay)
-        );
-      } else {
-        bootstrapSegment();
-      }
-
-      setTimeout(bootstrapSegment, fallbackDelay);
-    });
+    bootstrapSegment();
   }
 
   function setupTwitterPixel() {

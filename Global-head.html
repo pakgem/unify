@@ -63,4 +63,27 @@
     align-content: center;
     font-size: 0.875rem !important;
   }
+  
+  body {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  opacity: 0;
+}
+
+@supports (-webkit-touch-callout: none) {
+  noscript iframe {
+    display: none !important;
+  }
+}
 </style>
