@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.1] - 2026-01-22
+
+No release notes provided.
+
+
 ## [1.9.0] - 2026-01-20
 
 feat: update JavaScript functionality
