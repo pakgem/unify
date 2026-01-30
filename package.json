@@ -11,7 +11,9 @@
     "release:prerelease": "node release.js prerelease",
     "version": "node release.js version",
     "changelog": "node release.js changelog",
-    "deploy": "node deploy.js"
+    "deploy": "node deploy.js",
+    "build:min": "node scripts/minify.mjs",
+    "build": "npm run build:min"
   },
   "repository": {
     "type": "git",
@@ -27,6 +29,7 @@
   "devDependencies": {
     "chalk": "^4.1.2",
     "inquirer": "^8.2.6",
-    "semver": "^7.5.4"
+    "semver": "^7.5.4",
+    "terser": "^5.36.0"
   }
 }
