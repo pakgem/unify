@@ -613,6 +613,8 @@
           title: document.title || "",
           referrer: document.referrer || "",
           anonymousId: anonymousId || undefined,
+          cta_experiment: window.__unifyNavCtaExperiment,
+          cta_variant: window.__unifyNavCtaVariant,
         });
       }
 
