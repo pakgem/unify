@@ -376,17 +376,7 @@
         ? Math.min(100, Math.round((elapsedSeconds / duration) * 100))
         : undefined;
 
-    if (reason !== "ended") {
-      trackVideoEvent(
-        "Video Paused",
-        buildVideoPayload(session.videoInfo, session.triggerElement, {
-          watch_time_seconds: elapsedSeconds || undefined,
-          percent_watched: percent,
-          closed: reason === "closed",
-          tracking_method: "lightbox_timer",
-        })
-      );
-    }
+    // No close/paused event per request.
 
     trackingState.activeSession = null;
   }
