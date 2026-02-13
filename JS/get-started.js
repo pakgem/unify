@@ -1,68 +1,68 @@
-$(document).ready(function () {
-  // Only run this code if there's a Default form on the page
-  if ($("#default-form").length > 0) {
-    function getDecodedCookie(name) {
-      var nameEQ = name + "=";
-      var ca = document.cookie.split(";");
-      for (var i = 0; i < ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0) === " ") c = c.substring(1);
-        if (c.indexOf(nameEQ) === 0)
-          return decodeURIComponent(c.substring(nameEQ.length));
-      }
-      return null;
+function getDecodedCookie(name) {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(";");
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === " ") c = c.substring(1);
+    if (c.indexOf(nameEQ) === 0) {
+      return decodeURIComponent(c.substring(nameEQ.length));
     }
-
-    const FIELD_IDS = {
-      firstName: "468363",
-      lastName: "388880",
-      email: "686533",
-      employees: "394451",
-      crm: "659886",
-      referral: "539087",
-    };
-    const selectedUrl = "https://forms.default.com/390869";
-    const searchParams = new URLSearchParams(window.location.search);
-    const defaultFormParams = new URLSearchParams();
-
-    const setIfPresent = (fieldId, value) => {
-      if (!fieldId) return;
-      const trimmed =
-        typeof value === "string" ? value.trim() : value;
-      if (trimmed) {
-        defaultFormParams.set(fieldId, trimmed);
-      }
-    };
-
-    setIfPresent(FIELD_IDS.firstName, searchParams.get(FIELD_IDS.firstName));
-    setIfPresent(FIELD_IDS.lastName, searchParams.get(FIELD_IDS.lastName));
-    setIfPresent(
-      FIELD_IDS.employees,
-      searchParams.get(FIELD_IDS.employees)
-    );
-    setIfPresent(FIELD_IDS.crm, searchParams.get(FIELD_IDS.crm));
-    setIfPresent(
-      FIELD_IDS.referral,
-      searchParams.get(FIELD_IDS.referral)
-    );
-
-    const emailFromQuery =
-      searchParams.get(FIELD_IDS.email) || searchParams.get("email");
-    const emailFromCookie = getDecodedCookie("email");
-    const emailValue = emailFromQuery || emailFromCookie;
-
-    setIfPresent(FIELD_IDS.email, emailValue);
-    if (emailValue) {
-      defaultFormParams.set("email", emailValue);
-    }
-
-    const query = defaultFormParams.toString();
-    $("#default-form").attr(
-      "src",
-      query ? `${selectedUrl}?${query}` : selectedUrl
-    );
   }
-});
+  return null;
+}
+
+function initDefaultForm() {
+  // Only run this code if there's a Default form on the page.
+  const formEl = document.getElementById("default-form");
+  if (!formEl) return;
+
+  const FIELD_IDS = {
+    firstName: "468363",
+    lastName: "388880",
+    email: "686533",
+    employees: "394451",
+    crm: "659886",
+    referral: "539087",
+  };
+  const selectedUrl = "https://forms.default.com/390869";
+  const searchParams = new URLSearchParams(window.location.search);
+  const defaultFormParams = new URLSearchParams();
+
+  const setIfPresent = (fieldId, value) => {
+    if (!fieldId) return;
+    const trimmed = typeof value === "string" ? value.trim() : value;
+    if (trimmed) {
+      defaultFormParams.set(fieldId, trimmed);
+    }
+  };
+
+  setIfPresent(FIELD_IDS.firstName, searchParams.get(FIELD_IDS.firstName));
+  setIfPresent(FIELD_IDS.lastName, searchParams.get(FIELD_IDS.lastName));
+  setIfPresent(FIELD_IDS.employees, searchParams.get(FIELD_IDS.employees));
+  setIfPresent(FIELD_IDS.crm, searchParams.get(FIELD_IDS.crm));
+  setIfPresent(FIELD_IDS.referral, searchParams.get(FIELD_IDS.referral));
+
+  const emailFromQuery =
+    searchParams.get(FIELD_IDS.email) || searchParams.get("email");
+  const emailFromCookie = emailFromQuery ? null : getDecodedCookie("email");
+  const emailValue = emailFromQuery || emailFromCookie;
+
+  setIfPresent(FIELD_IDS.email, emailValue);
+  if (emailValue) {
+    defaultFormParams.set("email", emailValue);
+  }
+
+  const query = defaultFormParams.toString();
+  formEl.setAttribute("src", query ? `${selectedUrl}?${query}` : selectedUrl);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initDefaultForm, {
+    once: true,
+  });
+} else {
+  initDefaultForm();
+}
 
 (function () {
   const ALLOWED_ORIGIN = "https://forms.default.com";
@@ -78,6 +78,12 @@ $(document).ready(function () {
     }
   }
 
+  function track(name, props) {
+    if (window.analytics && typeof window.analytics.track === "function") {
+      window.analytics.track(name, props || {});
+    }
+  }
+
   window.addEventListener(
     "message",
     function (event) {
@@ -89,16 +95,6 @@ $(document).ready(function () {
 
         const payload = data.payload || {};
         const responses = payload.responses || {};
-
-        // Common analytics helper
-        function track(name, props) {
-          if (
-            window.analytics &&
-            typeof window.analytics.track === "function"
-          ) {
-            window.analytics.track(name, props || {});
-          }
-        }
 
         switch (data.event) {
           case "default.form_completed":
@@ -157,9 +153,9 @@ $(document).ready(function () {
               console.warn("trackFormSubmission unavailable");
             }
 
-            // Fire pixel safely
+            // Fire pixel safely.
             try {
-              var img = new Image();
+              const img = new Image();
               img.src =
                 "https://trkn.us/pixel/conv/ppt=25951;g=conversion;gid=66241;ord=" +
                 Date.now();
