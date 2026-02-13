@@ -433,6 +433,20 @@
       closeButton.addEventListener("click", close, { once: true });
     }
 
+    const backdropClickHandler = (event) => {
+      if (trackingState.activeSession !== session) return;
+      const inBackdrop =
+        event.target &&
+        typeof event.target.closest === "function" &&
+        event.target.closest(".w-lightbox-backdrop");
+      if (!inBackdrop) return;
+      const inFrame = event.target.closest(".w-lightbox-frame");
+      if (!inFrame) {
+        close();
+      }
+    };
+    document.addEventListener("click", backdropClickHandler, true);
+
     const keyHandler = (event) => {
       if (event.key === "Escape") {
         close();
@@ -448,6 +462,7 @@
     observer.observe(document.body, { childList: true, subtree: true });
 
     session.cleanup = () => {
+      document.removeEventListener("click", backdropClickHandler, true);
       document.removeEventListener("keydown", keyHandler);
       observer.disconnect();
       if (closeButton) {
