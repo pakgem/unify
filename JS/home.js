@@ -351,6 +351,7 @@
 
       const trackingIframe = ensureYouTubeIframe(iframe, videoInfo);
       trackingIframe.dataset.unifyYoutubeTracked = "true";
+      clearLightboxLoadingState(trackingIframe);
 
       initializeYouTubeTracking(
         trackingIframe,
@@ -422,6 +423,7 @@
     if (parent) {
       parent.replaceChild(replacement, existingIframe);
     }
+    clearLightboxLoadingState(replacement);
     return replacement;
   }
 
@@ -650,5 +652,39 @@
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  function clearLightboxLoadingState(iframe) {
+    if (!iframe) return;
+    const content = iframe.closest(".w-lightbox-content");
+    if (!content) return;
+
+    const spinner = content.querySelector(".w-lightbox-spinner");
+    if (spinner) {
+      spinner.classList.add("w-lightbox-hide");
+      spinner.setAttribute("aria-hidden", "true");
+      spinner.setAttribute("aria-busy", "false");
+    }
+
+    const placeholderImage = content.querySelector(".w-lightbox-img");
+    if (placeholderImage) {
+      placeholderImage.style.opacity = "0";
+      placeholderImage.style.pointerEvents = "none";
+    }
+
+    // Run once the iframe reports load, then again after a short delay as fallback.
+    iframe.addEventListener(
+      "load",
+      () => {
+        if (spinner) spinner.classList.add("w-lightbox-hide");
+        if (placeholderImage) placeholderImage.style.opacity = "0";
+      },
+      { once: true }
+    );
+
+    window.setTimeout(() => {
+      if (spinner) spinner.classList.add("w-lightbox-hide");
+      if (placeholderImage) placeholderImage.style.opacity = "0";
+    }, 500);
   }
 })(window, document);
