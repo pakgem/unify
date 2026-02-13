@@ -343,6 +343,7 @@
     trackVideoEvent(
       "Video Played",
       buildVideoPayload(videoInfo, triggerElement, {
+        video_stage: "start",
         watch_time_seconds: 0,
         percent_watched: 0,
         tracking_method: "lightbox_timer",
@@ -399,8 +400,9 @@
         if (percent >= milestone && !session.milestonesFired.has(milestone)) {
           session.milestonesFired.add(milestone);
           trackVideoEvent(
-            "Video Progress",
+            "Video Played",
             buildVideoPayload(session.videoInfo, session.triggerElement, {
+              video_stage: "progress",
               milestone,
               percent_watched: milestone,
               watch_time_seconds: Math.round(elapsedSeconds),
@@ -410,8 +412,9 @@
 
           if (milestone === 100) {
             trackVideoEvent(
-              "Video Ended",
+              "Video Played",
               buildVideoPayload(session.videoInfo, session.triggerElement, {
+                video_stage: "end",
                 completed: true,
                 percent_watched: 100,
                 watch_time_seconds: Math.round(duration),
@@ -472,7 +475,27 @@
   }
 
   function parseDurationFromLink(link) {
-    const textNode = link.querySelector(".plyr_explore-subtext");
+    const durationAttr =
+      link.getAttribute("data-video-duration") ||
+      link.getAttribute("data-video-length");
+    if (durationAttr) {
+      const parsed = parseInt(durationAttr, 10);
+      if (!Number.isNaN(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    let textNode = link.querySelector(".plyr_explore-subtext");
+    if (!textNode) {
+      const container =
+        link.closest(".perplexity_vid") ||
+        link.closest(".pos-rel") ||
+        link.parentElement;
+      textNode = container
+        ? container.querySelector(".plyr_explore-subtext")
+        : null;
+    }
+
     const text = textNode ? textNode.textContent : "";
     if (!text) return null;
 
