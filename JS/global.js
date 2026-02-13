@@ -472,7 +472,7 @@
   const NAV_CTA_EXPERIMENT = "nav_cta_text_v1";
   const NAV_CTA_STORAGE_KEY = "unify_nav_cta_variant";
   const NAV_CTA_VARIANTS = {
-    get_started: "Get Started",
+    get_started: "Get started",
     book_a_demo: "Book a Demo",
   };
 
@@ -484,17 +484,22 @@
 
     const variant = getNavCtaVariant();
     const label = NAV_CTA_VARIANTS[variant] || NAV_CTA_VARIANTS.get_started;
+    const shouldUpdateText = variant === "book_a_demo";
 
     window.__unifyNavCtaExperiment = NAV_CTA_EXPERIMENT;
     window.__unifyNavCtaVariant = variant;
 
     targets.forEach((target) => {
-      updateNavCtaText(target, label);
+      if (shouldUpdateText) {
+        updateNavCtaText(target, label);
+      }
       target.setAttribute("data-cta-experiment", NAV_CTA_EXPERIMENT);
       target.setAttribute("data-cta-variant", variant);
-      target.setAttribute("data-cta-label", label);
-      if (!target.getAttribute("aria-label")) {
-        target.setAttribute("aria-label", label);
+      if (shouldUpdateText) {
+        target.setAttribute("data-cta-label", label);
+        if (!target.getAttribute("aria-label")) {
+          target.setAttribute("aria-label", label);
+        }
       }
     });
 
