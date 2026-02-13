@@ -270,6 +270,7 @@
     initializeNavigation();
     initializeScrollBehavior();
     initializeLinkedIn();
+    setupNavCtaExperiment();
     trackGetStartedClicks();
     maybeInitDesktopEnhancements();
   });
@@ -453,11 +454,105 @@
       typeof target?.textContent === "string"
         ? target.textContent.trim()
         : undefined;
+    const ctaLabel = target?.getAttribute?.("data-cta-label") || fallbackName;
+    const ctaVariant =
+      target?.getAttribute?.("data-cta-variant") || window.__unifyNavCtaVariant;
+    const ctaExperiment =
+      target?.getAttribute?.("data-cta-experiment") ||
+      window.__unifyNavCtaExperiment;
     return {
       page_name: document.title ? document.title.trim() : "Unknown Page",
       timestamp: new Date().toISOString(),
-      cta_label: target?.getAttribute?.("data-cta-label") || fallbackName,
+      cta_label: ctaLabel,
+      cta_variant: ctaVariant,
+      cta_experiment: ctaExperiment,
     };
+  }
+
+  const NAV_CTA_EXPERIMENT = "nav_cta_text_v1";
+  const NAV_CTA_STORAGE_KEY = "unify_nav_cta_variant";
+  const NAV_CTA_VARIANTS = {
+    get_started: "Get Started",
+    book_a_demo: "Book a Demo",
+  };
+
+  function setupNavCtaExperiment() {
+    const targets = Array.from(
+      document.querySelectorAll(".get-started.is-nav")
+    );
+    if (!targets.length) return;
+
+    const variant = getNavCtaVariant();
+    const label = NAV_CTA_VARIANTS[variant] || NAV_CTA_VARIANTS.get_started;
+
+    window.__unifyNavCtaExperiment = NAV_CTA_EXPERIMENT;
+    window.__unifyNavCtaVariant = variant;
+
+    targets.forEach((target) => {
+      updateNavCtaText(target, label);
+      target.setAttribute("data-cta-experiment", NAV_CTA_EXPERIMENT);
+      target.setAttribute("data-cta-variant", variant);
+      target.setAttribute("data-cta-label", label);
+      if (!target.getAttribute("aria-label")) {
+        target.setAttribute("aria-label", label);
+      }
+    });
+
+    identifyNavCtaVariant(variant);
+  }
+
+  function updateNavCtaText(target, label) {
+    if (!target) return;
+    const textNode = Array.from(target.childNodes).find(
+      (node) =>
+        node.nodeType === Node.TEXT_NODE && node.textContent.trim().length
+    );
+    if (textNode) {
+      textNode.textContent = label;
+      return;
+    }
+    target.textContent = label;
+  }
+
+  function getNavCtaVariant() {
+    const stored = readNavCtaVariant();
+    if (stored) return stored;
+    const variant = Math.random() < 0.5 ? "get_started" : "book_a_demo";
+    persistNavCtaVariant(variant);
+    return variant;
+  }
+
+  function readNavCtaVariant() {
+    try {
+      const stored = localStorage.getItem(NAV_CTA_STORAGE_KEY);
+      if (stored && NAV_CTA_VARIANTS[stored]) {
+        return stored;
+      }
+    } catch (error) {
+      // Storage can be blocked in some browsers.
+    }
+    return null;
+  }
+
+  function persistNavCtaVariant(variant) {
+    try {
+      localStorage.setItem(NAV_CTA_STORAGE_KEY, variant);
+    } catch (error) {
+      // Storage can be blocked in some browsers.
+    }
+  }
+
+  function identifyNavCtaVariant(variant) {
+    if (!variant) return;
+    if (window.analytics && typeof window.analytics.identify === "function") {
+      const anonymousId = getOrCreateAnonymousId();
+      if (anonymousId) {
+        window.analytics.identify(anonymousId, {
+          nav_cta_experiment: NAV_CTA_EXPERIMENT,
+          nav_cta_variant: variant,
+        });
+      }
+    }
   }
 
   function flushPendingGetStartedClicks() {
