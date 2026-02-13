@@ -218,62 +218,24 @@
     );
     if (!lightboxLinks.length) return;
 
-    const playerStateByIframe = new Map();
-    const ytApiReady = loadYouTubeIframeApi();
+    const durationOverrides = {
+      bqgbZlMSW1I: 114,
+    };
+    const trackingState = {
+      activeSession: null,
+    };
 
     lightboxLinks.forEach((link) => {
       const videoInfo = extractLightboxVideoInfo(link);
       if (!videoInfo || !videoInfo.id) return;
 
+      videoInfo.durationSeconds =
+        durationOverrides[videoInfo.id] || parseDurationFromLink(link);
+
       link.addEventListener("click", () => {
-        ytApiReady
-          .then(() => attachPlayerWhenReady(link, videoInfo, playerStateByIframe))
-          .catch((error) =>
-            console.warn("YouTube API failed to load for tracking.", error)
-          );
+        waitForLightboxOpen(videoInfo, link, trackingState);
       });
     });
-  }
-
-  function loadYouTubeIframeApi() {
-    if (window.__unifyYouTubeApiReady) {
-      return window.__unifyYouTubeApiReady;
-    }
-
-    window.__unifyYouTubeApiReady = new Promise((resolve, reject) => {
-      if (window.YT && typeof window.YT.Player === "function") {
-        resolve();
-        return;
-      }
-
-      const existingScript = document.querySelector(
-        'script[src="https://www.youtube.com/iframe_api"]'
-      );
-      if (!existingScript) {
-        const tag = document.createElement("script");
-        tag.src = "https://www.youtube.com/iframe_api";
-        tag.async = true;
-        tag.onerror = () =>
-          reject(new Error("Unable to load YouTube IFrame API"));
-        document.head.appendChild(tag);
-      }
-
-      const previousReady = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = function () {
-        if (typeof previousReady === "function") {
-          previousReady();
-        }
-        resolve();
-      };
-
-      setTimeout(() => {
-        if (!window.YT || typeof window.YT.Player !== "function") {
-          reject(new Error("YouTube API timed out"));
-        }
-      }, 10000);
-    });
-
-    return window.__unifyYouTubeApiReady;
   }
 
   function extractLightboxVideoInfo(link) {
@@ -334,264 +296,195 @@
     }
   }
 
-  function attachPlayerWhenReady(link, videoInfo, playerStateByIframe) {
-    const maxWaitMs = 6000;
+  function waitForLightboxOpen(videoInfo, triggerElement, trackingState) {
     const startTime = Date.now();
+    const maxWaitMs = 3000;
 
-    const tryAttach = () => {
-      const iframe = findLightboxIframe();
-      if (!iframe) {
-        if (Date.now() - startTime < maxWaitMs) {
-          window.requestAnimationFrame(tryAttach);
-        }
+    const tryStart = () => {
+      const backdrop = document.querySelector(".w-lightbox-backdrop");
+      if (backdrop) {
+        startManualLightboxTracking(
+          backdrop,
+          videoInfo,
+          triggerElement,
+          trackingState
+        );
         return;
       }
 
-      if (iframe.dataset.unifyYoutubeTracked === "true") return;
-
-      const trackingIframe = ensureYouTubeIframe(iframe, videoInfo);
-      trackingIframe.dataset.unifyYoutubeTracked = "true";
-      clearLightboxLoadingState(trackingIframe);
-
-      initializeYouTubeTracking(
-        trackingIframe,
-        videoInfo,
-        link,
-        playerStateByIframe
-      );
+      if (Date.now() - startTime < maxWaitMs) {
+        window.requestAnimationFrame(tryStart);
+      }
     };
 
-    tryAttach();
+    tryStart();
   }
 
-  function findLightboxIframe() {
-    const backdrop = document.querySelector(".w-lightbox-backdrop");
-    if (!backdrop) return null;
-    return backdrop.querySelector("iframe");
-  }
-
-  function ensureYouTubeIframe(existingIframe, videoInfo) {
-    const currentSrc = existingIframe.getAttribute("src") || "";
-    const isYouTubeEmbed =
-      /youtube\.com\/embed\//i.test(currentSrc) ||
-      /youtube-nocookie\.com\/embed\//i.test(currentSrc);
-
-    if (isYouTubeEmbed) {
-      const updatedSrc = appendQueryParams(currentSrc, {
-        enablejsapi: "1",
-        origin: window.location.origin,
-      });
-      existingIframe.setAttribute("src", updatedSrc);
-      if (!existingIframe.getAttribute("id")) {
-        existingIframe.setAttribute(
-          "id",
-          `unify-yt-${videoInfo.id}-${Date.now()}`
-        );
-      }
-      return existingIframe;
-    }
-
-    const replacement = document.createElement("iframe");
-    const width = existingIframe.getAttribute("width") || videoInfo.width;
-    const height = existingIframe.getAttribute("height") || videoInfo.height;
-    if (width) replacement.setAttribute("width", width);
-    if (height) replacement.setAttribute("height", height);
-
-    replacement.setAttribute(
-      "src",
-      buildYouTubeEmbedSrc(videoInfo.id)
-    );
-    replacement.setAttribute(
-      "allow",
-      existingIframe.getAttribute("allow") ||
-        "autoplay; fullscreen; encrypted-media; picture-in-picture;"
-    );
-    replacement.setAttribute("frameborder", "0");
-    replacement.setAttribute("allowfullscreen", "true");
-    replacement.setAttribute(
-      "title",
-      existingIframe.getAttribute("title") || "YouTube embed"
-    );
-    replacement.className = existingIframe.className || "";
-    replacement.style.cssText = existingIframe.style.cssText || "";
-    replacement.setAttribute(
-      "id",
-      `unify-yt-${videoInfo.id}-${Date.now()}`
-    );
-
-    const parent = existingIframe.parentElement;
-    if (parent) {
-      parent.replaceChild(replacement, existingIframe);
-    }
-    clearLightboxLoadingState(replacement);
-    return replacement;
-  }
-
-  function buildYouTubeEmbedSrc(videoId) {
-    const origin = window.location.origin;
-    const params = [
-      "autoplay=1",
-      "enablejsapi=1",
-      "playsinline=1",
-      "rel=0",
-      `origin=${encodeURIComponent(origin)}`,
-    ];
-    return `https://www.youtube.com/embed/${videoId}?${params.join("&")}`;
-  }
-
-  function appendQueryParams(src, params) {
-    if (!src) return src;
-    const [base, queryString] = src.split("?");
-    const search = new URLSearchParams(queryString || "");
-    Object.keys(params).forEach((key) => {
-      if (!search.has(key)) {
-        search.set(key, params[key]);
-      }
-    });
-    const updatedQuery = search.toString();
-    return updatedQuery ? `${base}?${updatedQuery}` : base;
-  }
-
-  function initializeYouTubeTracking(
-    iframe,
+  function startManualLightboxTracking(
+    backdrop,
     videoInfo,
     triggerElement,
-    playerStateByIframe
+    trackingState
   ) {
-    const player = new window.YT.Player(iframe, {
-      events: {
-        onReady: () => {
-          const data = player.getVideoData ? player.getVideoData() : null;
-          if (data && data.title) {
-            videoInfo.title = data.title;
-          }
-        },
-        onStateChange: (event) => {
-          handleYouTubeStateChange(
-            event,
-            player,
-            videoInfo,
-            triggerElement,
-            playerStateByIframe
-          );
-        },
-      },
-    });
+    stopManualLightboxTracking(trackingState, "replaced");
 
-    playerStateByIframe.set(iframe, {
-      player,
+    const session = {
+      id: `${videoInfo.id}-${Date.now()}`,
+      startTime: Date.now(),
       milestonesFired: new Set(),
       progressTimer: null,
-      lastPercent: 0,
-    });
+      ended: false,
+      videoInfo,
+      triggerElement,
+      cleanup: null,
+    };
+    trackingState.activeSession = session;
 
-    observeLightboxClose(iframe, player, playerStateByIframe);
+    trackVideoEvent(
+      "Video Played",
+      buildVideoPayload(videoInfo, triggerElement, {
+        watch_time_seconds: 0,
+        percent_watched: 0,
+        tracking_method: "lightbox_timer",
+      })
+    );
+
+    startManualProgressTracking(session, trackingState);
+    attachLightboxCloseHandlers(backdrop, session, trackingState);
   }
 
-  function handleYouTubeStateChange(
-    event,
-    player,
-    videoInfo,
-    triggerElement,
-    playerStateByIframe
-  ) {
-    const state = playerStateByIframe.get(event.target.getIframe());
-    if (!state) return;
+  function stopManualLightboxTracking(trackingState, reason) {
+    const session = trackingState.activeSession;
+    if (!session || session.ended) return;
 
-    switch (event.data) {
-      case window.YT.PlayerState.PLAYING:
-        trackVideoEvent(
-          "Video Played",
-          buildVideoPayload(player, videoInfo, triggerElement)
-        );
-        startProgressTracking(player, videoInfo, triggerElement, state);
-        break;
-      case window.YT.PlayerState.PAUSED:
-        trackVideoEvent(
-          "Video Paused",
-          buildVideoPayload(player, videoInfo, triggerElement)
-        );
-        stopProgressTracking(state);
-        break;
-      case window.YT.PlayerState.ENDED:
-        stopProgressTracking(state);
-        fireMilestone(
-          player,
-          videoInfo,
-          triggerElement,
-          100,
-          state.milestonesFired
-        );
-        trackVideoEvent(
-          "Video Ended",
-          buildVideoPayload(player, videoInfo, triggerElement, {
-            completed: true,
-            percent_watched: 100,
-          })
-        );
-        break;
-      default:
-        break;
+    session.ended = true;
+    if (session.progressTimer) {
+      window.clearInterval(session.progressTimer);
+      session.progressTimer = null;
     }
+    if (typeof session.cleanup === "function") {
+      session.cleanup();
+    }
+
+    const elapsedSeconds = Math.max(
+      0,
+      Math.round((Date.now() - session.startTime) / 1000)
+    );
+    const duration = session.videoInfo.durationSeconds;
+    const percent =
+      duration && duration > 0
+        ? Math.min(100, Math.round((elapsedSeconds / duration) * 100))
+        : undefined;
+
+    if (reason !== "ended") {
+      trackVideoEvent(
+        "Video Paused",
+        buildVideoPayload(session.videoInfo, session.triggerElement, {
+          watch_time_seconds: elapsedSeconds || undefined,
+          percent_watched: percent,
+          closed: reason === "closed",
+          tracking_method: "lightbox_timer",
+        })
+      );
+    }
+
+    trackingState.activeSession = null;
   }
 
-  function startProgressTracking(player, videoInfo, triggerElement, state) {
-    if (state.progressTimer) return;
+  function startManualProgressTracking(session, trackingState) {
+    const duration = session.videoInfo.durationSeconds;
+    if (!duration || duration <= 0) return;
+
     const milestones = [25, 50, 75, 100];
 
-    state.progressTimer = window.setInterval(() => {
-      const duration = safeNumber(player.getDuration());
-      const currentTime = safeNumber(player.getCurrentTime());
-      if (!duration) return;
-
-      const percent = Math.floor((currentTime / duration) * 100);
-      if (percent === state.lastPercent) return;
-      state.lastPercent = percent;
+    session.progressTimer = window.setInterval(() => {
+      if (session.ended) return;
+      const elapsedSeconds = (Date.now() - session.startTime) / 1000;
+      const percent = Math.min(
+        100,
+        Math.floor((elapsedSeconds / duration) * 100)
+      );
 
       milestones.forEach((milestone) => {
-        if (percent >= milestone) {
-          fireMilestone(
-            player,
-            videoInfo,
-            triggerElement,
-            milestone,
-            state.milestonesFired
+        if (percent >= milestone && !session.milestonesFired.has(milestone)) {
+          session.milestonesFired.add(milestone);
+          trackVideoEvent(
+            "Video Progress",
+            buildVideoPayload(session.videoInfo, session.triggerElement, {
+              milestone,
+              percent_watched: milestone,
+              watch_time_seconds: Math.round(elapsedSeconds),
+              tracking_method: "lightbox_timer",
+            })
           );
+
+          if (milestone === 100) {
+            trackVideoEvent(
+              "Video Ended",
+              buildVideoPayload(session.videoInfo, session.triggerElement, {
+                completed: true,
+                percent_watched: 100,
+                watch_time_seconds: Math.round(duration),
+                tracking_method: "lightbox_timer",
+              })
+            );
+            stopManualLightboxTracking(trackingState, "ended");
+          }
         }
       });
     }, 1000);
   }
 
-  function stopProgressTracking(state) {
-    if (!state.progressTimer) return;
-    window.clearInterval(state.progressTimer);
-    state.progressTimer = null;
+  function attachLightboxCloseHandlers(backdrop, session, trackingState) {
+    const close = () => stopManualLightboxTracking(trackingState, "closed");
+
+    const closeButton = backdrop.querySelector(".w-lightbox-close");
+    if (closeButton) {
+      closeButton.addEventListener("click", close, { once: true });
+    }
+
+    const keyHandler = (event) => {
+      if (event.key === "Escape") {
+        close();
+      }
+    };
+    document.addEventListener("keydown", keyHandler);
+
+    const observer = new MutationObserver(() => {
+      if (!document.body.contains(backdrop)) {
+        close();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    session.cleanup = () => {
+      document.removeEventListener("keydown", keyHandler);
+      observer.disconnect();
+      if (closeButton) {
+        closeButton.removeEventListener("click", close);
+      }
+    };
   }
 
-  function fireMilestone(
-    player,
-    videoInfo,
-    triggerElement,
-    milestone,
-    firedSet
-  ) {
-    if (firedSet.has(milestone)) return;
-    firedSet.add(milestone);
-    trackVideoEvent(
-      "Video Progress",
-      buildVideoPayload(player, videoInfo, triggerElement, {
-        milestone,
-        percent_watched: milestone,
-      })
-    );
+  function parseDurationFromLink(link) {
+    const textNode = link.querySelector(".plyr_explore-subtext");
+    const text = textNode ? textNode.textContent : "";
+    if (!text) return null;
+
+    const timeMatch = text.trim().match(/(\d+)\s*:\s*(\d{2})/);
+    if (timeMatch) {
+      return parseInt(timeMatch[1], 10) * 60 + parseInt(timeMatch[2], 10);
+    }
+
+    const minMatch = text.trim().match(/(\d+)\s*min/i);
+    if (minMatch) {
+      return parseInt(minMatch[1], 10) * 60;
+    }
+
+    return null;
   }
 
-  function buildVideoPayload(player, videoInfo, triggerElement, overrides) {
-    const duration = safeNumber(player.getDuration());
-    const currentTime = safeNumber(player.getCurrentTime());
-    const percent = duration
-      ? Math.round((currentTime / duration) * 100)
-      : undefined;
+  function buildVideoPayload(videoInfo, triggerElement, overrides) {
     const payload = {
       page_name: document.title || undefined,
       page_url: window.location.href,
@@ -599,11 +492,7 @@
       video_title: videoInfo.title,
       video_url: videoInfo.url,
       video_provider: "youtube",
-      video_duration_seconds:
-        typeof duration === "number" ? duration : undefined,
-      watch_time_seconds:
-        typeof currentTime === "number" ? currentTime : undefined,
-      percent_watched: typeof percent === "number" ? percent : undefined,
+      video_duration_seconds: videoInfo.durationSeconds || undefined,
       lightbox_label: videoInfo.label || undefined,
       trigger_label:
         triggerElement?.getAttribute?.("aria-label") ||
@@ -628,63 +517,12 @@
     return payload;
   }
 
-  function safeNumber(value) {
-    return typeof value === "number" && Number.isFinite(value) ? value : null;
-  }
-
   function trackVideoEvent(name, payload) {
+    if (typeof console !== "undefined" && typeof console.log === "function") {
+      console.log("[video-tracking]", name, payload);
+    }
     if (window.analytics && typeof window.analytics.track === "function") {
       window.analytics.track(name, payload);
     }
-  }
-
-  function observeLightboxClose(iframe, player, playerStateByIframe) {
-    const observer = new MutationObserver(() => {
-      if (!document.body.contains(iframe)) {
-        try {
-          player.destroy();
-        } catch (error) {
-          console.warn("Failed to destroy YouTube player.", error);
-        }
-        playerStateByIframe.delete(iframe);
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-  function clearLightboxLoadingState(iframe) {
-    if (!iframe) return;
-    const content = iframe.closest(".w-lightbox-content");
-    if (!content) return;
-
-    const spinner = content.querySelector(".w-lightbox-spinner");
-    if (spinner) {
-      spinner.classList.add("w-lightbox-hide");
-      spinner.setAttribute("aria-hidden", "true");
-      spinner.setAttribute("aria-busy", "false");
-    }
-
-    const placeholderImage = content.querySelector(".w-lightbox-img");
-    if (placeholderImage) {
-      placeholderImage.style.opacity = "0";
-      placeholderImage.style.pointerEvents = "none";
-    }
-
-    // Run once the iframe reports load, then again after a short delay as fallback.
-    iframe.addEventListener(
-      "load",
-      () => {
-        if (spinner) spinner.classList.add("w-lightbox-hide");
-        if (placeholderImage) placeholderImage.style.opacity = "0";
-      },
-      { once: true }
-    );
-
-    window.setTimeout(() => {
-      if (spinner) spinner.classList.add("w-lightbox-hide");
-      if (placeholderImage) placeholderImage.style.opacity = "0";
-    }, 500);
   }
 })(window, document);
