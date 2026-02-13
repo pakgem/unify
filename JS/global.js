@@ -664,40 +664,56 @@
   function animateElements(elements, entering) {
     const { signIn, epLink, productLink } = elements;
 
-    gsap.to(signIn, {
-      opacity: entering ? 0 : 1,
-      y: entering ? 10 : 0,
-      duration: 0.3,
-      onStart: () => {
-        if (!entering) signIn.style.display = "flex";
-      },
-      onComplete: () => {
-        if (entering) {
+    gsap.killTweensOf([signIn, epLink, productLink]);
+
+    if (entering) {
+      const tl = gsap.timeline();
+      tl.to(signIn, {
+        opacity: 0,
+        y: 10,
+        duration: 0.2,
+        onStart: () => {
+          signIn.style.display = "flex";
+        },
+        onComplete: () => {
           signIn.style.display = "none";
           signIn.classList.add("hide-link");
-        } else {
-          signIn.classList.remove("hide-link");
-        }
-      },
-    });
-
-    gsap.to(epLink, {
-      opacity: entering ? 1 : 0,
-      y: entering ? 0 : 10,
-      duration: 0.3,
-      onStart: () => {
-        if (entering) {
-          epLink.style.display = "flex";
-          epLink.classList.remove("hide-link");
-        }
-      },
-      onComplete: () => {
-        if (!entering) {
+        },
+      })
+        .set(epLink, {
+          display: "flex",
+        })
+        .to(epLink, {
+          opacity: 1,
+          y: 0,
+          duration: 0.2,
+          onStart: () => {
+            epLink.classList.remove("hide-link");
+          },
+        });
+    } else {
+      const tl = gsap.timeline();
+      tl.to(epLink, {
+        opacity: 0,
+        y: 10,
+        duration: 0.2,
+        onComplete: () => {
           epLink.style.display = "none";
           epLink.classList.add("hide-link");
-        }
-      },
-    });
+        },
+      })
+        .set(signIn, {
+          display: "flex",
+        })
+        .to(signIn, {
+          opacity: 1,
+          y: 0,
+          duration: 0.2,
+          onStart: () => {
+            signIn.classList.remove("hide-link");
+          },
+        });
+    }
 
     gsap.to(productLink, {
       opacity: entering ? 0 : 1,
