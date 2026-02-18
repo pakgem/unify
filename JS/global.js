@@ -273,6 +273,7 @@
     setupNavCtaExperiment();
     trackGetStartedClicks();
     maybeInitDesktopEnhancements();
+    initializeAnalytics();
   });
 
   function initializeNavigation() {
@@ -1291,7 +1292,6 @@
 
     const bootstrapSegment = () => {
       if (window.__segmentBootstrapped) {
-        initializeAnalytics();
         return;
       }
       try {
@@ -1362,7 +1362,6 @@
             analytics.load("sQrrlorDOdJXFEMEGP6ZD9EjtL9KTJ66");
           }
           window.__segmentBootstrapped = true;
-          initializeAnalytics();
         } else {
           console.log("Bot detected, Segment analytics not initialized");
         }
