@@ -478,17 +478,18 @@
   };
 
   function setupNavCtaExperiment() {
+    const variant = getNavCtaVariant();
+    window.__unifyNavCtaExperiment = NAV_CTA_EXPERIMENT;
+    window.__unifyNavCtaVariant = variant;
+
     const targets = Array.from(
       document.querySelectorAll(".get-started.is-nav")
     );
+    window.__unifyNavCtaOnPage = targets.length > 0;
     if (!targets.length) return;
 
-    const variant = getNavCtaVariant();
     const label = NAV_CTA_VARIANTS[variant] || NAV_CTA_VARIANTS.get_started;
     const shouldUpdateText = variant === "book_a_demo";
-
-    window.__unifyNavCtaExperiment = NAV_CTA_EXPERIMENT;
-    window.__unifyNavCtaVariant = variant;
 
     targets.forEach((target) => {
       if (shouldUpdateText) {
@@ -608,15 +609,18 @@
           }
         );
 
-        analytics.track("Viewed", {
+        const viewedProps = {
           url: window.location.href,
           path: window.location.pathname,
           title: document.title || "",
           referrer: document.referrer || "",
           anonymousId: anonymousId || undefined,
-          cta_experiment: window.__unifyNavCtaExperiment,
-          cta_variant: window.__unifyNavCtaVariant,
-        });
+        };
+        if (window.__unifyNavCtaOnPage) {
+          viewedProps.cta_experiment = window.__unifyNavCtaExperiment;
+          viewedProps.cta_variant = window.__unifyNavCtaVariant;
+        }
+        analytics.track("Viewed", viewedProps);
       }
 
       document.querySelectorAll("form").forEach((form) => {

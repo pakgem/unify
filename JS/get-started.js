@@ -80,7 +80,14 @@ if (document.readyState === "loading") {
 
   function track(name, props) {
     if (window.analytics && typeof window.analytics.track === "function") {
-      window.analytics.track(name, props || {});
+      const merged = { ...(props || {}) };
+      if (window.__unifyNavCtaExperiment) {
+        merged.cta_experiment = window.__unifyNavCtaExperiment;
+      }
+      if (window.__unifyNavCtaVariant) {
+        merged.cta_variant = window.__unifyNavCtaVariant;
+      }
+      window.analytics.track(name, merged);
     }
   }
 
@@ -169,6 +176,6 @@ if (document.readyState === "loading") {
         console.error("Default form message handler error:", err);
       }
     },
-    false
+    false,
   );
 })();
