@@ -110,7 +110,7 @@ if (document.readyState === "loading") {
 
   function track(name, props) {
     if (window.analytics && typeof window.analytics.track === "function") {
-      const merged = { ...(props || {}) };
+      const merged = { ...(props || {}), source: "parent_postmessage" };
       if (window.__unifyNavCtaExperiment) {
         merged.cta_experiment = window.__unifyNavCtaExperiment;
       }
