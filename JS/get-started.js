@@ -168,15 +168,15 @@ if (document.readyState === "loading") {
               window.__unifyIdentifiedEmail = email;
               window.analytics.identify(email, { email });
             }
-            track("Default Form Page Submitted", payload);
+            track("default_form_page_submitted", payload);
             break;
 
           case "default.scheduler_displayed":
-            track("Default Scheduler Displayed", payload);
+            track("default_scheduler_displayed", payload);
             break;
 
           case "default.meeting_booked":
-            track("Default Meeting Booked", payload);
+            track("default_meeting_booked", payload);
 
             if (window.twq && typeof window.twq === "function") {
               window.twq("event", "tw-q4sy6-q4sy8", {
