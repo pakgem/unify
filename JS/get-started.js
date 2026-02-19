@@ -54,6 +54,10 @@ function initDefaultForm() {
 
   const query = defaultFormParams.toString();
   formEl.setAttribute("src", query ? `${selectedUrl}?${query}` : selectedUrl);
+
+  if (emailValue && window.analytics && typeof window.analytics.identify === "function") {
+    window.analytics.identify(emailValue, { email: emailValue });
+  }
 }
 
 if (document.readyState === "loading") {
@@ -126,6 +130,10 @@ if (document.readyState === "loading") {
             break;
 
           case "default.form_page_submitted":
+            email = responses.work_email || payload.email || email || null;
+            if (email && window.analytics && typeof window.analytics.identify === "function") {
+              window.analytics.identify(email, { email });
+            }
             track("Default Form Page Submitted", payload);
             break;
 
