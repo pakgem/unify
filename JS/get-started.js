@@ -52,10 +52,36 @@ function initDefaultForm() {
     defaultFormParams.set("email", emailValue);
   }
 
+  let anonId = null;
+  try {
+    if (typeof window.getOrCreateAnonymousId === "function") {
+      anonId = window.getOrCreateAnonymousId();
+    }
+    if (!anonId && window.analytics?.user?.()?.anonymousId?.()) {
+      anonId = window.analytics.user().anonymousId();
+    }
+    if (!anonId && typeof localStorage !== "undefined") {
+      anonId = localStorage.getItem("segment_anonymous_id");
+    }
+    if (!anonId) {
+      const match = document.cookie.match(/anonymousId=([^;]+)/);
+      anonId = match ? decodeURIComponent(match[1]) : null;
+    }
+  } catch (_) {}
+  if (anonId) {
+    defaultFormParams.set("segment_anonymous_id", anonId);
+  }
+
   const query = defaultFormParams.toString();
   formEl.setAttribute("src", query ? `${selectedUrl}?${query}` : selectedUrl);
 
-  if (emailValue && window.analytics && typeof window.analytics.identify === "function") {
+  if (
+    emailValue &&
+    window.analytics &&
+    typeof window.analytics.identify === "function" &&
+    window.__unifyIdentifiedEmail !== emailValue
+  ) {
+    window.__unifyIdentifiedEmail = emailValue;
     window.analytics.identify(emailValue, { email: emailValue });
   }
 }
@@ -123,15 +149,23 @@ if (document.readyState === "loading") {
             if (
               email &&
               window.analytics &&
-              typeof window.analytics.identify === "function"
+              typeof window.analytics.identify === "function" &&
+              window.__unifyIdentifiedEmail !== email
             ) {
+              window.__unifyIdentifiedEmail = email;
               window.analytics.identify(email, payload);
             }
             break;
 
           case "default.form_page_submitted":
             email = responses.work_email || payload.email || email || null;
-            if (email && window.analytics && typeof window.analytics.identify === "function") {
+            if (
+              email &&
+              window.analytics &&
+              typeof window.analytics.identify === "function" &&
+              window.__unifyIdentifiedEmail !== email
+            ) {
+              window.__unifyIdentifiedEmail = email;
               window.analytics.identify(email, { email });
             }
             track("Default Form Page Submitted", payload);
