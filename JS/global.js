@@ -552,13 +552,10 @@
   function identifyNavCtaVariant(variant) {
     if (!variant) return;
     if (window.analytics && typeof window.analytics.identify === "function") {
-      const anonymousId = getOrCreateAnonymousId();
-      if (anonymousId) {
-        window.analytics.identify(anonymousId, {
-          nav_cta_experiment: NAV_CTA_EXPERIMENT,
-          nav_cta_variant: variant,
-        });
-      }
+      window.analytics.identify({
+        nav_cta_experiment: NAV_CTA_EXPERIMENT,
+        nav_cta_variant: variant,
+      });
     }
   }
 
