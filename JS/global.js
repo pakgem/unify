@@ -270,7 +270,6 @@
     initializeNavigation();
     initializeScrollBehavior();
     initializeLinkedIn();
-    setupNavCtaExperiment();
     trackGetStartedClicks();
     maybeInitDesktopEnhancements();
     initializeAnalytics();
@@ -456,107 +455,11 @@
         ? target.textContent.trim()
         : undefined;
     const ctaLabel = target?.getAttribute?.("data-cta-label") || fallbackName;
-    const ctaVariant =
-      target?.getAttribute?.("data-cta-variant") || window.__unifyNavCtaVariant;
-    const ctaExperiment =
-      target?.getAttribute?.("data-cta-experiment") ||
-      window.__unifyNavCtaExperiment;
     return {
       page_name: document.title ? document.title.trim() : "Unknown Page",
       timestamp: new Date().toISOString(),
       cta_label: ctaLabel,
-      cta_variant: ctaVariant,
-      cta_experiment: ctaExperiment,
     };
-  }
-
-  const NAV_CTA_EXPERIMENT = "nav_cta_text_v1";
-  const NAV_CTA_STORAGE_KEY = "unify_nav_cta_variant";
-  const NAV_CTA_VARIANTS = {
-    get_started: "Get started",
-    book_a_demo: "Book a Demo",
-  };
-
-  function setupNavCtaExperiment() {
-    const variant = getNavCtaVariant();
-    window.__unifyNavCtaExperiment = NAV_CTA_EXPERIMENT;
-    window.__unifyNavCtaVariant = variant;
-
-    const targets = Array.from(
-      document.querySelectorAll(".get-started.is-nav")
-    );
-    window.__unifyNavCtaOnPage = targets.length > 0;
-    if (!targets.length) return;
-
-    const label = NAV_CTA_VARIANTS[variant] || NAV_CTA_VARIANTS.get_started;
-    const shouldUpdateText = variant === "book_a_demo";
-
-    targets.forEach((target) => {
-      if (shouldUpdateText) {
-        updateNavCtaText(target, label);
-      }
-      target.setAttribute("data-cta-experiment", NAV_CTA_EXPERIMENT);
-      target.setAttribute("data-cta-variant", variant);
-      if (shouldUpdateText) {
-        target.setAttribute("data-cta-label", label);
-        if (!target.getAttribute("aria-label")) {
-          target.setAttribute("aria-label", label);
-        }
-      }
-    });
-
-    identifyNavCtaVariant(variant);
-  }
-
-  function updateNavCtaText(target, label) {
-    if (!target) return;
-    const textNode = Array.from(target.childNodes).find(
-      (node) =>
-        node.nodeType === Node.TEXT_NODE && node.textContent.trim().length
-    );
-    if (textNode) {
-      textNode.textContent = label;
-      return;
-    }
-    target.textContent = label;
-  }
-
-  function getNavCtaVariant() {
-    const stored = readNavCtaVariant();
-    if (stored) return stored;
-    const variant = Math.random() < 0.5 ? "get_started" : "book_a_demo";
-    persistNavCtaVariant(variant);
-    return variant;
-  }
-
-  function readNavCtaVariant() {
-    try {
-      const stored = localStorage.getItem(NAV_CTA_STORAGE_KEY);
-      if (stored && NAV_CTA_VARIANTS[stored]) {
-        return stored;
-      }
-    } catch (error) {
-      // Storage can be blocked in some browsers.
-    }
-    return null;
-  }
-
-  function persistNavCtaVariant(variant) {
-    try {
-      localStorage.setItem(NAV_CTA_STORAGE_KEY, variant);
-    } catch (error) {
-      // Storage can be blocked in some browsers.
-    }
-  }
-
-  function identifyNavCtaVariant(variant) {
-    if (!variant) return;
-    if (window.analytics && typeof window.analytics.identify === "function") {
-      window.analytics.identify({
-        nav_cta_experiment: NAV_CTA_EXPERIMENT,
-        nav_cta_variant: variant,
-      });
-    }
   }
 
   function flushPendingGetStartedClicks() {
@@ -613,10 +516,6 @@
           referrer: document.referrer || "",
           anonymousId: anonymousId || undefined,
         };
-        if (window.__unifyNavCtaOnPage) {
-          viewedProps.cta_experiment = window.__unifyNavCtaExperiment;
-          viewedProps.cta_variant = window.__unifyNavCtaVariant;
-        }
         analytics.track("Viewed", viewedProps);
       }
 
