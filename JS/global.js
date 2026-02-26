@@ -766,10 +766,32 @@
       document.cookie &&
       document.cookie.indexOf("OptanonConsent=") !== -1;
 
+    const openCookieSettingsPanel = () => {
+      if (
+        window.OneTrust &&
+        typeof window.OneTrust.ToggleInfoDisplay === "function"
+      ) {
+        window.OneTrust.ToggleInfoDisplay();
+        return true;
+      }
+      if (
+        window.Optanon &&
+        typeof window.Optanon.ToggleInfoDisplay === "function"
+      ) {
+        window.Optanon.ToggleInfoDisplay();
+        return true;
+      }
+      return false;
+    };
+
     const loadOneTrust = () => {
       if (window.OneTrustDeferredLoaded) {
         notifyConsentWatchers();
         tryAttachConsentListener();
+        if (window.__unifyOpenCookieSettings) {
+          window.__unifyOpenCookieSettings = false;
+          openCookieSettingsPanel();
+        }
         return;
       }
 
@@ -782,9 +804,33 @@
         window.OneTrustDeferredLoaded = true;
         tryAttachConsentListener();
         notifyConsentWatchers();
+        if (window.__unifyOpenCookieSettings) {
+          window.__unifyOpenCookieSettings = false;
+          openCookieSettingsPanel();
+        }
       };
 
       document.head.appendChild(sdk);
+    };
+
+    const requestCookieSettings = () => {
+      if (openCookieSettingsPanel()) return;
+      window.__unifyOpenCookieSettings = true;
+      loadOneTrust();
+    };
+
+    const attachCookieSettingsHandler = () => {
+      if (window.__unifyCookieSettingsHandlerAttached) return;
+      window.__unifyCookieSettingsHandlerAttached = true;
+
+      document.addEventListener("click", (event) => {
+        const target = event.target?.closest?.(
+          "#ot-sdk-btn, .ot-sdk-show-settings"
+        );
+        if (!target) return;
+        event.preventDefault();
+        requestCookieSettings();
+      });
     };
 
     const existingOptanonWrapper = window.OptanonWrapper;
@@ -792,6 +838,10 @@
       window.OneTrustDeferredLoaded = true;
       tryAttachConsentListener();
       notifyConsentWatchers();
+      if (window.__unifyOpenCookieSettings) {
+        window.__unifyOpenCookieSettings = false;
+        openCookieSettingsPanel();
+      }
       if (typeof existingOptanonWrapper === "function") {
         try {
           existingOptanonWrapper();
@@ -843,6 +893,7 @@
     };
 
     const mobile = isMobileViewport();
+    attachCookieSettingsHandler();
     if (hasExistingConsent()) {
       scheduleLoad({
         idleDelay: mobile ? 6000 : 3000,
@@ -983,21 +1034,19 @@
       document.head.appendChild(script);
     };
 
-    onConsent(CONSENT_GROUPS.performance, () => {
-      const mobile = isMobileViewport();
-      const idleDelay = mobile ? 4500 : 1500;
-      const fallbackDelay = mobile ? 35000 : 20000;
+    const mobile = isMobileViewport();
+    const idleDelay = mobile ? 4500 : 1500;
+    const fallbackDelay = mobile ? 35000 : 20000;
 
-      if (
-        typeof UnifyLoadUtils.runAfterInteraction === "function" &&
-        typeof UnifyLoadUtils.runWhenIdle === "function"
-      ) {
-        UnifyLoadUtils.runAfterInteraction(() =>
-          UnifyLoadUtils.runWhenIdle(injectGtm, idleDelay)
-        );
-      }
-      setTimeout(injectGtm, fallbackDelay);
-    });
+    if (
+      typeof UnifyLoadUtils.runAfterInteraction === "function" &&
+      typeof UnifyLoadUtils.runWhenIdle === "function"
+    ) {
+      UnifyLoadUtils.runAfterInteraction(() =>
+        UnifyLoadUtils.runWhenIdle(injectGtm, idleDelay)
+      );
+    }
+    setTimeout(injectGtm, fallbackDelay);
   }
 
   function scheduleGtagMeasurement() {

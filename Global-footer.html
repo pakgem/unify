@@ -5,7 +5,7 @@
 ></script>
 <script
   defer
-  src="https://cdn.jsdelivr.net/gh/pakgem/unify@v1.9.1/JS/global.js"
+  src="https://cdn.jsdelivr.net/gh/pakgem/unify@v1.11.0/JS/global.js"
 ></script>
 
 <!-- Managed in JS/global.js: LinkedIn, Navattic, OneTrust, GTM, GA, Segment, Twitter, testing data. -->
@@ -88,6 +88,34 @@
   }, 600);
 </script>
 
+<!-- Syft tag -->
+<script type="text/javascript">
+  !(function (t, e, c) {
+    if (((t.syftc = c), !t.syft)) {
+      ((t.syft = {
+        q: [],
+        fi: [],
+        fetchID: function () {
+          var e = Array.prototype.slice.call(arguments);
+          return new Promise(function (c, f) {
+            t.syft.fi.push({ args: e, resolve: c, reject: f });
+          });
+        },
+      }),
+        ["identify", "track", "page", "signup"].forEach(function (e) {
+          t.syft[e] = function () {
+            var c = Array.prototype.slice.call(arguments);
+            (c.unshift(e), t.syft.q.push(c));
+          };
+        }));
+      var f = e.createElement("script");
+      ((f.async = !0),
+        f.setAttribute("src", "https://cdn.sy-d.io/syftnext/syft.umd.js"),
+        (e.body || e.head).appendChild(f));
+    }
+  })(window, document, { sourceId: "cmlzoago50009kz047zg64xvq" });
+</script>
+
 <!-- Posthog -->
 <script>
   window.__unifyDefer(function () {
@@ -146,7 +174,17 @@
     posthog.init("phc_eLELdjMUDABB8Qg0pC0poaktw8fhGHcBFDGR2z7Q4a8", {
       api_host: "https://us.i.posthog.com",
       defaults: "2025-11-30",
-      person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well
+      person_profiles: "identified_only",
+      before_send: function (event) {
+        if (!event) return null;
+        var sessionId = posthog.get_session_id();
+        var hash = sessionId.split("").reduce(function (acc, c) {
+          return acc + c.charCodeAt(0);
+        }, 0);
+        // Drop 50% of sessions based on session ID hash
+        if (hash % 2 === 0) return null;
+        return event;
+      },
     });
   }, 900);
 </script>
