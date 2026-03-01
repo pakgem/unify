@@ -516,7 +516,9 @@
           referrer: document.referrer || "",
           anonymousId: anonymousId || undefined,
         };
-        analytics.track("Viewed", viewedProps);
+        setTimeout(() => {
+          analytics.track("Viewed", viewedProps);
+        }, 3000);
       }
 
       document.querySelectorAll("form").forEach((form) => {
