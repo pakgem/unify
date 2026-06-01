@@ -1,6 +1,6 @@
 {
   "name": "unify",
-  "version": "1.14.6",
+  "version": "1.14.7",
   "description": "Webflow JavaScript files for Unify",
   "main": "index.js",
   "scripts": {

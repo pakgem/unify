@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.7] - 2026-06-01
+
+Contain supercharge glow to word
+
+
 ## [1.14.6] - 2026-06-01
 
 Re-release supercharge text script
