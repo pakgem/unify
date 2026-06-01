@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.5] - 2026-06-01
+
+Restore original supercharge CSS
+
+
 ## [1.14.4] - 2026-06-01
 
 Isolate supercharge effect stack in Webflow
