@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.11] - 2026-06-01
+
+Keep supercharge letters visible in nested stacking contexts.
+
+
 ## [1.14.10] - 2026-06-01
 
 Contain supercharge glow in stacking-context layouts.
