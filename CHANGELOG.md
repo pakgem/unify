@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.2] - 2026-06-01
+
+Copy exact supercharge text animation behavior
+
+
 ## [1.14.1] - 2026-06-01
 
 Fix supercharge text rendering
