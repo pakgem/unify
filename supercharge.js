@@ -1,344 +1,1044 @@
-(function (window, document) {
-  "use strict";
+(function() {
+  'use strict';
 
-  var STYLE_ID = "unify-supercharge-text-style";
-  var DEFAULTS = {
-    cover: 4,
-    color: "#FE3C01",
-    autoSpeed: 2.5,
-    maxBlur: 0.028,
-    ovalScale: 5,
-    shiftRight: 0.667,
-    overlayBlur: 0.756,
-    plusLighterBlur: 0.734,
-    hoverBoost: 2.1,
-    hoverRamp: 2300,
-    energyNoise: 3.7,
-  };
-
-  function injectStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-
-    var style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.textContent =
-      ".supercharge.sc-ready{" +
-      "position:relative;display:inline-block;isolation:isolate;" +
-      "--sc-color:#FE3C01;--sc-word-width:0px;--sc-word-height:1em;" +
-      "--sc-cover-width:0px;--sc-cover-left:0px;" +
-      "--sc-overlay-blur:0.756em;--sc-plus-blur:0.734em;" +
-      "--sc-speed:2.5s;--sc-hover-ramp:2300ms;--sc-hover-level:0;" +
-      "--sc-hover-boost:2.1;--sc-noise:3.7;" +
-      "}" +
-      ".supercharge.sc-ready .sc-kern-ref{" +
-      "position:relative;z-index:3;display:inline-block;color:inherit;white-space:inherit;" +
-      "}" +
-      ".supercharge.sc-ready .sc-char{" +
-      "position:absolute;z-index:2;display:block;pointer-events:none;" +
-      "color:var(--sc-color);" +
-      "mix-blend-mode:multiply;" +
-      "text-shadow:" +
-      "0 0 calc((0.04em + var(--sc-noise) * 0.012em) * (1 + var(--sc-hover-level) * var(--sc-hover-boost))) var(--sc-color)," +
-      "0 0 calc((0.16em + var(--sc-noise) * 0.032em) * (1 + var(--sc-hover-level) * var(--sc-hover-boost))) var(--sc-color);" +
-      "text-shadow:" +
-      "0 0 calc((0.04em + var(--sc-noise) * 0.012em) * (1 + var(--sc-hover-level) * var(--sc-hover-boost))) color-mix(in srgb,var(--sc-color) 84%,transparent)," +
-      "0 0 calc((0.16em + var(--sc-noise) * 0.032em) * (1 + var(--sc-hover-level) * var(--sc-hover-boost))) color-mix(in srgb,var(--sc-color) 54%,transparent);" +
-      "transition:filter var(--sc-hover-ramp) ease,text-shadow var(--sc-hover-ramp) ease;" +
-      "}" +
-      ".supercharge.sc-ready .sc-overlay," +
-      ".supercharge.sc-ready .sc-plus-lighter{" +
-      "position:absolute;top:0;pointer-events:none;transform-origin:center;" +
-      "mix-blend-mode:plus-lighter;" +
-      "}" +
-      ".supercharge.sc-ready .sc-overlay{" +
-      "z-index:1;left:calc(var(--sc-cover-left) - var(--sc-cover-width) * 0.45);" +
-      "width:calc(var(--sc-cover-width) * var(--sc-oval-scale,5));" +
-      "height:var(--sc-word-height);opacity:0.72;" +
-      "background:radial-gradient(ellipse at center,var(--sc-color) 0%,var(--sc-color) 34%,transparent 72%);" +
-      "background:radial-gradient(ellipse at center,color-mix(in srgb,var(--sc-color) 76%,white 10%) 0%,color-mix(in srgb,var(--sc-color) 46%,transparent) 34%,transparent 72%);" +
-      "filter:blur(var(--sc-overlay-blur));" +
-      "animation:sc-drift var(--sc-speed) ease-in-out infinite alternate;" +
-      "transition:opacity var(--sc-hover-ramp) ease,filter var(--sc-hover-ramp) ease;" +
-      "}" +
-      ".supercharge.sc-ready .sc-plus-lighter{" +
-      "z-index:4;left:calc(var(--sc-cover-left) + var(--sc-cover-width) * 1.55);" +
-      "width:var(--sc-cover-width);height:var(--sc-word-height);opacity:0.44;" +
-      "background:linear-gradient(90deg,transparent,var(--sc-color),transparent);" +
-      "background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--sc-color) 24%,white 76%),transparent);" +
-      "filter:blur(var(--sc-plus-blur));" +
-      "animation:sc-drift calc(var(--sc-speed) * 1.18) ease-in-out infinite alternate-reverse;" +
-      "transition:opacity var(--sc-hover-ramp) ease,filter var(--sc-hover-ramp) ease;" +
-      "}" +
-      ".supercharge.sc-ready:hover{" +
-      "--sc-hover-level:1;" +
-      "}" +
-      ".supercharge.sc-ready:hover .sc-overlay{" +
-      "opacity:1;filter:blur(calc(var(--sc-overlay-blur) * 1.35));" +
-      "}" +
-      ".supercharge.sc-ready:hover .sc-plus-lighter{" +
-      "opacity:0.86;filter:blur(calc(var(--sc-plus-blur) * 1.25));" +
-      "}" +
-      "@keyframes sc-drift{" +
-      "from{transform:translate3d(calc(var(--sc-shift-right,0em) * -1),0,0);}" +
-      "to{transform:translate3d(calc(var(--sc-shift-right,0em) * 1),0,0);}" +
-      "}" +
-      "@media (prefers-reduced-motion:reduce){" +
-      ".supercharge.sc-ready .sc-overlay,.supercharge.sc-ready .sc-plus-lighter{animation:none;}" +
-      "}";
-
+  var styleId = 'unify-supercharge-experiment-css';
+  if (!document.getElementById(styleId)) {
+    var style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = ".supercharge {\n  position: relative;\n  display: inline-block;\n  font-kerning: normal;\n  font-feature-settings: \"kern\" 1;\n  vertical-align: baseline;\n}\n.supercharge .sc-char {\n  position: absolute;\n  display: inline-block;\n  font-kerning: normal;\n  font-feature-settings: \"kern\" 1;\n  will-change: filter;\n  z-index: -2;\n}\n.supercharge .sc-kern-ref {\n  visibility: hidden;\n  font-kerning: normal;\n  font-feature-settings: \"kern\" 1;\n  letter-spacing: inherit;\n}\n.supercharge .sc-overlay,\n.supercharge .sc-plus-lighter {\n  position: absolute;\n  border-radius: 50%;\n  background: var(--sc-color, #FE3C01);\n  pointer-events: none;\n  transform-origin: center center;\n  will-change: transform, box-shadow;\n  z-index: -1;\n}\n.supercharge .sc-overlay {\n  mix-blend-mode: overlay;\n}\n.supercharge .sc-plus-lighter {\n  mix-blend-mode: plus-lighter;\n}\n@supports not (mix-blend-mode: plus-lighter) {\n  .supercharge .sc-plus-lighter {\n    mix-blend-mode: screen;\n  }\n}\n";
     document.head.appendChild(style);
   }
+})();
 
-  function toNumber(value, fallback) {
-    var number = parseFloat(value);
-    return Number.isFinite(number) ? number : fallback;
-  }
+(function() {
+  'use strict';
 
-  function option(element, key, fallback) {
-    var attr = element.getAttribute("data-sc-" + key);
-    return attr === null || attr === "" ? fallback : attr;
-  }
+  var instances = [];
+  var loopRunning = false;
+  var lastTime = 0;
+  var motionQuery = getMotionQuery();
+  var scrollListenerBound = false;
+  var objectHasOwn = Object.prototype.hasOwnProperty;
+  var passiveEventOptions = getPassiveEventOptions();
 
-  function readOptions(element) {
-    return {
-      cover: Math.max(
-        0,
-        Math.round(toNumber(option(element, "cover", DEFAULTS.cover), DEFAULTS.cover))
-      ),
-      color: option(element, "color", DEFAULTS.color),
-      autoSpeed: Math.max(
-        0.1,
-        toNumber(option(element, "auto-speed", DEFAULTS.autoSpeed), DEFAULTS.autoSpeed)
-      ),
-      maxBlur: Math.max(
-        0,
-        toNumber(option(element, "max-blur", DEFAULTS.maxBlur), DEFAULTS.maxBlur)
-      ),
-      ovalScale: Math.max(
-        0.1,
-        toNumber(option(element, "oval-scale", DEFAULTS.ovalScale), DEFAULTS.ovalScale)
-      ),
-      shiftRight: toNumber(
-        option(element, "shift-right", DEFAULTS.shiftRight),
-        DEFAULTS.shiftRight
-      ),
-      overlayBlur: Math.max(
-        0,
-        toNumber(
-          option(element, "overlay-blur", DEFAULTS.overlayBlur),
-          DEFAULTS.overlayBlur
-        )
-      ),
-      plusLighterBlur: Math.max(
-        0,
-        toNumber(
-          option(element, "plus-lighter-blur", DEFAULTS.plusLighterBlur),
-          DEFAULTS.plusLighterBlur
-        )
-      ),
-      hoverBoost: Math.max(
-        0,
-        toNumber(option(element, "hover-boost", DEFAULTS.hoverBoost), DEFAULTS.hoverBoost)
-      ),
-      hoverRamp: Math.max(
-        0,
-        toNumber(option(element, "hover-ramp", DEFAULTS.hoverRamp), DEFAULTS.hoverRamp)
-      ),
-      energyNoise: Math.max(
-        0,
-        toNumber(
-          option(element, "energy-noise", DEFAULTS.energyNoise),
-          DEFAULTS.energyNoise
-        )
-      ),
-    };
-  }
-
-  function applyVariables(element, options) {
-    var animationDuration = 6 / options.autoSpeed;
-
-    element.style.setProperty("--sc-color", options.color);
-    element.style.setProperty("--sc-speed", animationDuration + "s");
-    element.style.setProperty("--sc-letter-blur", options.maxBlur + "em");
-    element.style.setProperty("--sc-oval-scale", options.ovalScale);
-    element.style.setProperty("--sc-shift-right", options.shiftRight + "em");
-    element.style.setProperty("--sc-overlay-blur", options.overlayBlur + "em");
-    element.style.setProperty("--sc-plus-blur", options.plusLighterBlur + "em");
-    element.style.setProperty("--sc-hover-boost", options.hoverBoost);
-    element.style.setProperty("--sc-hover-ramp", options.hoverRamp + "ms");
-    element.style.setProperty("--sc-noise", options.energyNoise);
-  }
-
-  function getBlur(index, total, maxBlur) {
-    if (total <= 1) return maxBlur;
-    var center = (total - 1) / 2;
-    var distance = Math.abs(index - center) / center;
-    var wave = 0.35 + distance * 0.65;
-    return maxBlur * wave;
-  }
-
-  function setCoverMetrics(element, reference, letters, cover, options) {
-    var referenceRect = reference.getBoundingClientRect();
-    var elementRect = element.getBoundingClientRect();
-    var chargedLetters = letters.slice(0, Math.min(cover, letters.length));
-
-    element.style.setProperty("--sc-word-width", referenceRect.width + "px");
-    element.style.setProperty("--sc-word-height", referenceRect.height + "px");
-
-    letters.forEach(function (letter, index) {
-      var rect = letter._scMeasure.getBoundingClientRect();
-      letter.style.left = rect.left - elementRect.left + "px";
-      letter.style.top = rect.top - elementRect.top + "px";
-      letter.style.filter =
-        "blur(" +
-        getBlur(index, letters.length, options.maxBlur * referenceRect.height) +
-        "px) contrast(1.15) saturate(1.1)";
-    });
-
-    if (!chargedLetters.length) {
-      element.style.setProperty("--sc-cover-left", "0px");
-      element.style.setProperty("--sc-cover-width", "0px");
-      return;
-    }
-
-    var firstRect = chargedLetters[0]._scMeasure.getBoundingClientRect();
-    var lastRect =
-      chargedLetters[chargedLetters.length - 1]._scMeasure.getBoundingClientRect();
-    var left = firstRect.left - elementRect.left;
-    var width = lastRect.right - firstRect.left;
-
-    element.style.setProperty("--sc-cover-left", left + "px");
-    element.style.setProperty("--sc-cover-width", width + "px");
-  }
-
-  function scheduleMetrics(element, reference, letters, cover, options) {
-    var frame = 0;
-
-    function measure() {
-      frame = 0;
-      setCoverMetrics(element, reference, letters, cover, options);
-    }
-
-    function schedule() {
-      if (frame) return;
-      frame = window.requestAnimationFrame(measure);
-    }
-
-    schedule();
-    return {
-      schedule: schedule,
-      cancel: function () {
-        if (frame) window.cancelAnimationFrame(frame);
-      },
-    };
-  }
-
-  function init(element) {
-    if (!element) return null;
-    if (element._superchargeDestroy) element._superchargeDestroy();
-
-    injectStyles();
-
-    var originalText = element.textContent || "";
-    var options = readOptions(element);
-    var characters = Array.from(originalText);
-    var reference = document.createElement("span");
-    var overlay = document.createElement("span");
-    var plus = document.createElement("span");
-    var letters = [];
-
-    reference.className = "sc-kern-ref";
-    reference.setAttribute("aria-hidden", "true");
-    overlay.className = "sc-overlay";
-    overlay.setAttribute("aria-hidden", "true");
-    plus.className = "sc-plus-lighter";
-    plus.setAttribute("aria-hidden", "true");
-
-    characters.forEach(function (character, index) {
-      var measure = document.createElement("span");
-      var letter = document.createElement("span");
-
-      measure.textContent = character;
-      reference.appendChild(measure);
-
-      letter.className = "sc-char";
-      letter.textContent = character;
-      letter._scMeasure = measure;
-      letter.style.animationDelay = index * 70 + "ms";
-      letters.push(letter);
-    });
-
-    element.textContent = "";
-    element.setAttribute("role", "text");
-    element.setAttribute("aria-label", originalText);
-    element.appendChild(reference);
-    letters.forEach(function (letter) {
-      element.appendChild(letter);
-    });
-    element.appendChild(overlay);
-    element.appendChild(plus);
-    element.classList.add("sc-ready");
-    applyVariables(element, options);
-
-    var metrics = scheduleMetrics(element, reference, letters, options.cover, options);
-    var resizeObserver = null;
-
-    if ("ResizeObserver" in window) {
-      resizeObserver = new ResizeObserver(metrics.schedule);
-      resizeObserver.observe(element);
-    } else {
-      window.addEventListener("resize", metrics.schedule);
-    }
-
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(metrics.schedule).catch(function () {});
-    }
-
-    element._superchargeDestroy = function () {
-      metrics.cancel();
-      if (resizeObserver) {
-        resizeObserver.disconnect();
-      } else {
-        window.removeEventListener("resize", metrics.schedule);
-      }
-
-      element.classList.remove("sc-ready");
-      element.removeAttribute("aria-label");
-      element.removeAttribute("role");
-      element.textContent = originalText;
-      delete element._superchargeDestroy;
-    };
-
-    return element._superchargeDestroy;
-  }
-
-  function initAll(root) {
-    var scope = root || document;
-    var elements = scope.querySelectorAll
-      ? scope.querySelectorAll(".supercharge")
-      : [];
-
-    if (scope.classList && scope.classList.contains("supercharge")) {
-      init(scope);
-    }
-
-    Array.prototype.forEach.call(elements, init);
-  }
-
-  function onReady() {
-    initAll(document);
-  }
-
-  window.SuperchargeText = {
-    init: init,
-    initAll: initAll,
+  var R = {
+    padX: 0.222,
+    padY: 0.178,
+    shiftRight: 0.667,
+    maxDist: 4.444,
+    maxBlur: 0.028,
+    heightExtra: 0.333,
+    xHeight: 0.45,
+    sharedHeightMul: 1.0,
+    ovalScale: 5,
+    overlayBlur: 0.756,
+    plusLighterBlur: 0.734,
+    autoSpeed: 2.5,
+    hoverBoost: 2.1,
+    hoverRamp: 2300,
+    hoverDecay: 500,
+    energyNoise: 3.7
   };
 
-  window.SuperchargeExperiment = window.SuperchargeText;
+  var DATA_KEYS = {
+    padX: 'scPadX',
+    padY: 'scPadY',
+    shiftRight: 'scShiftRight',
+    maxDist: 'scMaxDist',
+    maxBlur: 'scMaxBlur',
+    heightExtra: 'scHeightExtra',
+    xHeight: 'scXHeight',
+    sharedHeightMul: 'scSharedHeightMul',
+    ovalScale: 'scOvalScale',
+    overlayBlur: 'scOverlayBlur',
+    plusLighterBlur: 'scPlusLighterBlur',
+    autoSpeed: 'scAutoSpeed',
+    hoverBoost: 'scHoverBoost',
+    hoverRamp: 'scHoverRamp',
+    hoverDecay: 'scHoverDecay',
+    energyNoise: 'scEnergyNoise'
+  };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", onReady);
-  } else {
-    onReady();
+  var EASE_IN = 0.08;
+  var EASE_OUT = 0.16;
+  var SETTLE_SQ = 4;
+  var DT_CAP = 50;
+  var FRAME_MS = 16.667;
+  var BASE_FILTER = 'contrast(1.15) saturate(1.1)';
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  var HEAT_BUCKETS = 8;
+  var HOVER_STABILITY = {
+    stillRadius: 10,
+    stillDelay: 120,
+    moveEpsilon: 1.5,
+    moveCooldown: 120,
+    moveDecay: 900
+  };
+
+  var requestFrame = window.requestAnimationFrame ||
+    function(callback) { return window.setTimeout(function() { callback(Date.now()); }, FRAME_MS); };
+
+  function noop() {}
+
+  function getPassiveEventOptions() {
+    var supported = false;
+    try {
+      var options = Object.defineProperty({}, 'passive', {
+        get: function() {
+          supported = true;
+        }
+      });
+      window.addEventListener('test-passive', noop, options);
+      window.removeEventListener('test-passive', noop, options);
+    } catch (error) {
+      supported = false;
+    }
+    return supported ? { passive: true } : false;
   }
-})(window, document);
+
+  function getMotionQuery() {
+    if (typeof window.matchMedia === 'function') {
+      return window.matchMedia('(prefers-reduced-motion: reduce)');
+    }
+    return {
+      matches: false,
+      addEventListener: noop,
+      removeEventListener: noop,
+      addListener: noop,
+      removeListener: noop
+    };
+  }
+
+  function addMotionListener(listener) {
+    if (typeof motionQuery.addEventListener === 'function') {
+      motionQuery.addEventListener('change', listener);
+    } else if (typeof motionQuery.addListener === 'function') {
+      motionQuery.addListener(listener);
+    }
+  }
+
+  function removeMotionListener(listener) {
+    if (typeof motionQuery.removeEventListener === 'function') {
+      motionQuery.removeEventListener('change', listener);
+    } else if (typeof motionQuery.removeListener === 'function') {
+      motionQuery.removeListener(listener);
+    }
+  }
+
+  function reportRuntimeError(error) {
+    if (window.console && typeof window.console.error === 'function') {
+      window.console.error('[supercharge] animation stopped after an error', error);
+    }
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function square(value) {
+    return value * value;
+  }
+
+  HOVER_STABILITY.stillRadiusSq = square(HOVER_STABILITY.stillRadius);
+  HOVER_STABILITY.moveEpsilonSq = square(HOVER_STABILITY.moveEpsilon);
+
+  function roundPx(value) {
+    return Math.round(value * 100) / 100;
+  }
+
+  function isUsableColor(value) {
+    return !value ||
+      typeof CSS === 'undefined' ||
+      typeof CSS.supports !== 'function' ||
+      CSS.supports('color', value);
+  }
+
+  function createHtmlSpan(className, text) {
+    var span = document.createElement('span');
+    span.className = className;
+    if (text != null) span.textContent = text;
+    span.setAttribute('aria-hidden', 'true');
+    return span;
+  }
+
+  function setBox(el, left, top, width, height) {
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+    el.style.width = width + 'px';
+    el.style.height = height + 'px';
+  }
+
+  function setPosition(el, left, top) {
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  }
+
+  function resetTransformCache() {
+    return { tx: NaN, ty: NaN, scale: NaN };
+  }
+
+  function disposeRange(range) {
+    if (range && typeof range.detach === 'function') {
+      range.detach();
+    }
+  }
+
+  function getTextUnits(text) {
+    var units = [];
+
+    if (typeof Intl !== 'undefined' && typeof Intl.Segmenter === 'function') {
+      var segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+      var iterator = segmenter.segment(text)[Symbol.iterator]();
+      var next = iterator.next();
+      while (!next.done) {
+        units.push({
+          text: next.value.segment,
+          start: next.value.index,
+          end: next.value.index + next.value.segment.length
+        });
+        next = iterator.next();
+      }
+      return units;
+    }
+
+    var offset = 0;
+    var chars = typeof Array.from === 'function' ? Array.from(text) : text.split('');
+    for (var i = 0; i < chars.length; i++) {
+      units.push({ text: chars[i], start: offset, end: offset + chars[i].length });
+      offset += chars[i].length;
+    }
+    return units;
+  }
+
+  function setSvgAttrs(el, attrs) {
+    for (var key in attrs) {
+      if (objectHasOwn.call(attrs, key)) {
+        el.setAttribute(key, attrs[key]);
+      }
+    }
+  }
+
+  function createHeatFilterBank(prefix) {
+    var filterSvg = document.createElementNS(SVG_NS, 'svg');
+    filterSvg.setAttribute('aria-hidden', 'true');
+    filterSvg.setAttribute('focusable', 'false');
+    filterSvg.style.position = 'absolute';
+    filterSvg.style.width = '0';
+    filterSvg.style.height = '0';
+    filterSvg.style.overflow = 'hidden';
+    filterSvg.style.pointerEvents = 'none';
+
+    var defs = document.createElementNS(SVG_NS, 'defs');
+    var urls = new Array(HEAT_BUCKETS + 1);
+    var noises = new Array(HEAT_BUCKETS + 1);
+    var displaces = new Array(HEAT_BUCKETS + 1);
+
+    for (var bucket = 1; bucket <= HEAT_BUCKETS; bucket++) {
+      var heatFilterId = prefix + '-' + bucket;
+      var heatFilter = document.createElementNS(SVG_NS, 'filter');
+      setSvgAttrs(heatFilter, {
+        id: heatFilterId,
+        x: '-45%',
+        y: '-45%',
+        width: '190%',
+        height: '190%',
+        'color-interpolation-filters': 'sRGB'
+      });
+
+      var heatNoise = document.createElementNS(SVG_NS, 'feTurbulence');
+      setSvgAttrs(heatNoise, {
+        type: 'turbulence',
+        baseFrequency: '0.006 0.08',
+        numOctaves: '1',
+        seed: '2',
+        result: 'heatNoise'
+      });
+
+      var heatMap = document.createElementNS(SVG_NS, 'feComponentTransfer');
+      setSvgAttrs(heatMap, {
+        'in': 'heatNoise',
+        result: 'heatMap'
+      });
+
+      var heatGreen = document.createElementNS(SVG_NS, 'feFuncG');
+      setSvgAttrs(heatGreen, {
+        type: 'linear',
+        slope: '0',
+        intercept: '0.5'
+      });
+      heatMap.appendChild(heatGreen);
+
+      var heatDisplace = document.createElementNS(SVG_NS, 'feDisplacementMap');
+      setSvgAttrs(heatDisplace, {
+        'in': 'SourceGraphic',
+        in2: 'heatMap',
+        scale: '0',
+        xChannelSelector: 'R',
+        yChannelSelector: 'G'
+      });
+
+      heatFilter.appendChild(heatNoise);
+      heatFilter.appendChild(heatMap);
+      heatFilter.appendChild(heatDisplace);
+      defs.appendChild(heatFilter);
+
+      urls[bucket] = 'url("#' + heatFilterId + '")';
+      noises[bucket] = heatNoise;
+      displaces[bucket] = heatDisplace;
+    }
+
+    filterSvg.appendChild(defs);
+    return {
+      svg: filterSvg,
+      urls: urls,
+      noises: noises,
+      displaces: displaces
+    };
+  }
+
+  function onScrollShared() {
+    for (var i = 0; i < instances.length; i++) {
+      instances[i].invalidateRect();
+    }
+  }
+
+  function ensureScrollListener() {
+    if (!scrollListenerBound) {
+      scrollListenerBound = true;
+      window.addEventListener('scroll', onScrollShared, passiveEventOptions);
+    }
+  }
+
+  function releaseScrollListenerIfIdle() {
+    if (scrollListenerBound && instances.length === 0) {
+      scrollListenerBound = false;
+      window.removeEventListener('scroll', onScrollShared, passiveEventOptions);
+    }
+  }
+
+  function tick(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    var dt = Math.min(timestamp - lastTime, DT_CAP);
+    lastTime = timestamp;
+
+    var anyActive = false;
+    for (var i = 0; i < instances.length; i++) {
+      var inst = instances[i];
+      if (inst.active) {
+        try {
+          inst.step(dt);
+          anyActive = anyActive || inst.active;
+        } catch (error) {
+          inst.active = false;
+          reportRuntimeError(error);
+        }
+      }
+    }
+    if (anyActive) {
+      requestFrame(tick);
+    } else {
+      loopRunning = false;
+      lastTime = 0;
+    }
+  }
+
+  function startLoop() {
+    if (!loopRunning) {
+      loopRunning = true;
+      lastTime = 0;
+      requestFrame(tick);
+    }
+  }
+
+  function readNumber(value, fallback) {
+    var n = parseFloat(value);
+    return isFinite(n) ? n : fallback;
+  }
+
+  function readConfig(el) {
+    var config = {};
+    for (var key in R) {
+      if (objectHasOwn.call(R, key)) {
+        config[key] = readNumber(el.dataset[DATA_KEYS[key]], R[key]);
+      }
+    }
+    config.padX = Math.max(0, config.padX);
+    config.padY = Math.max(0, config.padY);
+    config.maxDist = Math.max(0.001, config.maxDist);
+    config.maxBlur = Math.max(0, config.maxBlur);
+    config.heightExtra = Math.max(0, config.heightExtra);
+    config.xHeight = Math.max(0.001, config.xHeight);
+    config.sharedHeightMul = Math.max(0.001, config.sharedHeightMul);
+    config.ovalScale = Math.max(0.001, config.ovalScale);
+    config.overlayBlur = Math.max(0, config.overlayBlur);
+    config.plusLighterBlur = Math.max(0, config.plusLighterBlur);
+    config.autoSpeed = Math.max(0, config.autoSpeed);
+    config.hoverBoost = Math.max(0, config.hoverBoost);
+    config.hoverRamp = Math.max(1, config.hoverRamp);
+    config.hoverDecay = Math.max(1, config.hoverDecay);
+    config.energyNoise = Math.max(0, config.energyNoise);
+    return config;
+  }
+
+  function initSupercharge(el) {
+    if (el._superchargeDestroy) {
+      el._superchargeDestroy();
+    }
+
+    var word = el.textContent.trim();
+    if (!word) return;
+    if (typeof document.createRange !== 'function') return;
+
+    var originalText = el.textContent;
+    var destroyed = false;
+    var units = getTextUnits(word);
+    var n = units.length;
+    if (!n) return;
+    var config = readConfig(el);
+
+    var coverCount = clamp(parseInt(el.dataset.scCover, 10) || 4, 1, n);
+
+    if (el.dataset.scColor) {
+      if (isUsableColor(el.dataset.scColor)) {
+        el.style.setProperty('--sc-color', el.dataset.scColor);
+      } else {
+        el.style.removeProperty('--sc-color');
+      }
+    }
+
+    el.textContent = '';
+    el.setAttribute('aria-label', word);
+    el.setAttribute('role', 'text');
+
+    var kernRef = createHtmlSpan('sc-kern-ref', word);
+    el.appendChild(kernRef);
+
+    var spans = new Array(n);
+    for (var i = 0; i < n; i++) {
+      var span = createHtmlSpan('sc-char', units[i].text);
+      el.appendChild(span);
+      spans[i] = span;
+    }
+
+    var ovEl = createHtmlSpan('sc-overlay');
+    el.appendChild(ovEl);
+
+    var plEl = createHtmlSpan('sc-plus-lighter');
+    el.appendChild(plEl);
+
+    var ovCloneEl = createHtmlSpan('sc-overlay');
+    el.appendChild(ovCloneEl);
+
+    var plCloneEl = createHtmlSpan('sc-plus-lighter');
+    el.appendChild(plCloneEl);
+
+    var heatFilters = createHeatFilterBank('sc-heat-haze-' + Math.random().toString(36).slice(2));
+    var heatFilterUrls = heatFilters.urls;
+    var heatNoises = heatFilters.noises;
+    var heatDisplaces = heatFilters.displaces;
+    var filterSvg = heatFilters.svg;
+    (document.body || document.documentElement).appendChild(filterSvg);
+
+    var centersX = new Float64Array(n);
+    var centersY = new Float64Array(n);
+    var prevBlurs = new Float32Array(n);
+    var prevHaze = new Int16Array(n);
+
+    var fontSize = 0;
+    var plInitLeft = 0, plInitTop = 0, plWidth = 0, sharedHeight = 0;
+    var plHalfW = 0, halfHeight = 0;
+    var maxBlur = 0, maxDist = 0, maxDistSq = 0;
+    var wordWidth = 0;
+    var speedPxPerMs = 0;
+    var exitRight = 0;
+    var loopSpan = 0;
+    var overlayBlurPx = 0, plusLighterBlurPx = 0;
+
+    var currentX = 0, currentY = 0;
+    var targetX = 0, targetY = 0;
+    var hoverCharge = 0;
+    var hovering = false;
+    var autoAnimating = true;
+    var inViewport = true;
+    var cachedRect = null;
+    var lastMouseX = 0, lastMouseY = 0;
+    var hoverAnchorX = 0, hoverAnchorY = 0;
+    var hoverStillMs = 0;
+    var hoverMoveCooldown = 0;
+    var autoX = 0;
+    var activeOffset = 0;
+    var transformCache = resetTransformCache();
+    var lastGlowIntensity = NaN;
+    var lastEnergyLevel = NaN;
+    var energyClock = 0;
+    var energyPhase = 0;
+    var measured = false;
+
+    function invalidateCharFilters() {
+      prevBlurs.fill(-1);
+      prevHaze.fill(-1);
+    }
+
+    function resetHoverStability(x, y) {
+      hoverAnchorX = x;
+      hoverAnchorY = y;
+      hoverStillMs = 0;
+      hoverMoveCooldown = 0;
+    }
+
+    function normalizeLoopX(x) {
+      if (!loopSpan) return x;
+      var minX = exitRight - loopSpan;
+      while (x > exitRight) x -= loopSpan;
+      while (x <= minX) x += loopSpan;
+      return x;
+    }
+
+    function measure() {
+      if (destroyed) return;
+
+      var cs = getComputedStyle(el);
+      fontSize = readNumber(cs.fontSize, 0);
+      if (fontSize <= 0) return;
+
+      var elRect = el.getBoundingClientRect();
+      if (elRect.width === 0 || elRect.height === 0) return;
+
+      var textNode = kernRef.firstChild;
+      if (!textNode) return;
+
+      var kernRefRect = kernRef.getBoundingClientRect();
+      var topOff = kernRefRect.top - elRect.top;
+      var refHeight = kernRefRect.height;
+
+      var charLeft = new Float64Array(n);
+      var charTop = new Float64Array(n);
+      var charWidth = new Float64Array(n);
+      var charHeight = new Float64Array(n);
+      var caretX = new Float64Array(n + 1);
+      var range = document.createRange();
+
+      function getCaretX(offset) {
+        range.setStart(textNode, offset);
+        range.setEnd(textNode, offset);
+
+        var rects = range.getClientRects();
+        if (rects.length) return rects[0].left;
+
+        var rect = range.getBoundingClientRect();
+        if (rect.height || rect.width) return rect.left;
+
+        if (offset === 0) return kernRefRect.left;
+        range.setStart(textNode, 0);
+        range.setEnd(textNode, offset);
+        return range.getBoundingClientRect().right;
+      }
+
+      try {
+        for (var i = 0; i < n; i++) {
+          caretX[i] = getCaretX(units[i].start);
+        }
+        caretX[n] = getCaretX(units[n - 1].end);
+        var textOriginX = caretX[0];
+
+        for (var i = 0; i < n; i++) {
+          range.setStart(textNode, units[i].start);
+          range.setEnd(textNode, units[i].end);
+          var r = range.getBoundingClientRect();
+          charLeft[i] = caretX[i] - textOriginX;
+          charTop[i] = r.top - elRect.top - topOff;
+          charWidth[i] = Math.max(0, caretX[i + 1] - caretX[i]);
+          charHeight[i] = r.height;
+        }
+      } finally {
+        disposeRange(range);
+      }
+
+      wordWidth = caretX[n] - textOriginX;
+      if (!isFinite(wordWidth) || wordWidth <= 0) return;
+
+      var padX = fontSize * config.padX;
+      var padY = fontSize * config.padY;
+      var shiftRight = fontSize * config.shiftRight;
+      maxDist = fontSize * config.maxDist;
+      maxDistSq = maxDist * maxDist;
+      maxBlur = fontSize * config.maxBlur;
+      var xHeight = fontSize * config.xHeight;
+      var heightExtra = fontSize * config.heightExtra;
+
+      var baselineY = refHeight * 0.75;
+      sharedHeight = (xHeight + padY * 2) * config.sharedHeightMul + heightExtra;
+      halfHeight = sharedHeight / 2;
+
+      var firstIdx = n - coverCount;
+      plWidth = (wordWidth - charLeft[firstIdx]) + padX * 2;
+      plHalfW = plWidth / 2;
+      plInitLeft = charLeft[firstIdx] - padX + shiftRight;
+      plInitTop = baselineY - xHeight - padY - heightExtra;
+
+      var plCX = plInitLeft + plHalfW;
+      var ovW = plWidth * config.ovalScale;
+      var ovInitLeft = plCX - ovW / 2;
+
+      speedPxPerMs = fontSize * config.autoSpeed / 1000;
+      exitRight = wordWidth - plHalfW + ovW / 2;
+      loopSpan = wordWidth + plWidth;
+
+      for (var i = 0; i < n; i++) {
+        centersX[i] = charLeft[i] + charWidth[i] / 2;
+        centersY[i] = charTop[i] + charHeight[i] / 2;
+      }
+
+      for (var i = 0; i < n; i++) {
+        setPosition(spans[i], charLeft[i], charTop[i]);
+      }
+
+      overlayBlurPx = fontSize * config.overlayBlur;
+      plusLighterBlurPx = fontSize * config.plusLighterBlur;
+      lastGlowIntensity = NaN;
+      writeGlowStyle();
+
+      setBox(plEl, plInitLeft, plInitTop, plWidth, sharedHeight);
+      setBox(plCloneEl, plInitLeft, plInitTop, plWidth, sharedHeight);
+      setBox(ovEl, ovInitLeft, plInitTop, ovW, sharedHeight);
+      setBox(ovCloneEl, ovInitLeft, plInitTop, ovW, sharedHeight);
+
+      currentX = plInitLeft;
+      currentY = plInitTop;
+      targetX = plInitLeft;
+      targetY = plInitTop;
+      autoX = plInitLeft;
+      activeOffset = 0;
+      plEl.style.transform = '';
+      ovEl.style.transform = '';
+      plCloneEl.style.transform = '';
+      ovCloneEl.style.transform = '';
+      transformCache = resetTransformCache();
+      lastEnergyLevel = NaN;
+      cachedRect = null;
+      invalidateCharFilters();
+      measured = true;
+
+      applyEffects();
+
+      if (!hovering && !motionQuery.matches) {
+        autoAnimating = true;
+        inst.active = true;
+        startLoop();
+      }
+      if (hovering) {
+        cachedRect = el.getBoundingClientRect();
+        targetX = (lastMouseX - cachedRect.left) - plHalfW;
+        targetY = (lastMouseY - cachedRect.top) - halfHeight;
+        inst.active = true;
+        startLoop();
+      }
+    }
+
+    function applyEffects() {
+      var effectiveMaxBlur = maxBlur * (1 + hoverCharge * config.hoverBoost * 0.75);
+      var hazeLevel = getEnergyLevel();
+      var cloneX = loopSpan ? currentX - loopSpan : currentX;
+
+      for (var i = 0; i < n; i++) {
+        var proximity = Math.max(
+          getGlowProximity(i, currentX),
+          getGlowProximity(i, cloneX)
+        );
+        var blur = Math.round(proximity * effectiveMaxBlur * 20) / 20;
+
+        var hazeProximity = proximity * proximity * proximity;
+        writeCharFilter(i, blur, hazeLevel * hazeProximity);
+      }
+    }
+
+    function getGlowProximity(i, glowX) {
+      var cx = glowX + plHalfW;
+      var cy = plInitTop + halfHeight;
+      var dx = centersX[i] - cx;
+      var dy = centersY[i] - cy;
+      var distSq = square(dx) + square(dy);
+      if (distSq >= maxDistSq) return 0;
+      return 1 - Math.sqrt(distSq) / maxDist;
+    }
+
+    function writeCharFilter(i, blur, haze) {
+      var hazeBucket = 0;
+      var normalizedHaze = clamp(haze / Math.max(config.energyNoise, 0.001), 0, 1);
+      if (normalizedHaze > 0.05) {
+        hazeBucket = clamp(Math.ceil(normalizedHaze * HEAT_BUCKETS), 1, HEAT_BUCKETS);
+      }
+      if (blur === prevBlurs[i] && hazeBucket === prevHaze[i]) return;
+
+      prevBlurs[i] = blur;
+      prevHaze[i] = hazeBucket;
+
+      var filter = '';
+      if (hazeBucket > 0) {
+        filter += heatFilterUrls[hazeBucket] + ' ';
+      }
+      if (blur > 0.01) {
+        filter += 'blur(' + blur + 'px) ';
+      }
+      spans[i].style.filter = filter + BASE_FILTER;
+    }
+
+    function writeGlowStyle() {
+      var intensity = Math.round(hoverCharge * 1000) / 1000;
+      if (intensity === lastGlowIntensity) return;
+      lastGlowIntensity = intensity;
+
+      var glowBlur = Math.round(intensity * config.hoverBoost * fontSize * 0.32 * 100) / 100;
+      var glowSpread = Math.round(intensity * config.hoverBoost * fontSize * 0.12 * 100) / 100;
+      var glow = intensity === 0
+        ? ''
+        : '0 0 ' + glowBlur + 'px ' + glowSpread + 'px var(--sc-color, #FE3C01)';
+
+      ovEl.style.filter = 'blur(' + overlayBlurPx + 'px)';
+      plEl.style.filter = 'blur(' + plusLighterBlurPx + 'px)';
+      ovCloneEl.style.filter = 'blur(' + overlayBlurPx + 'px)';
+      plCloneEl.style.filter = 'blur(' + plusLighterBlurPx + 'px)';
+      ovEl.style.boxShadow = glow;
+      plEl.style.boxShadow = glow;
+      ovCloneEl.style.boxShadow = glow;
+      plCloneEl.style.boxShadow = glow;
+    }
+
+    function getEnergyLevel() {
+      var peak = clamp((hoverCharge - 0.62) / 0.38, 0, 1);
+      return peak * Math.max(0, config.energyNoise);
+    }
+
+    function writeEnergyStyle(dt) {
+      var level = getEnergyLevel();
+      var rounded = Math.round(level * 1000) / 1000;
+      energyClock += dt;
+      energyPhase += dt * 0.010;
+
+      if (rounded <= 0) {
+        if (lastEnergyLevel !== 0) {
+          lastEnergyLevel = 0;
+          for (var bucket = 1; bucket <= HEAT_BUCKETS; bucket++) {
+            heatDisplaces[bucket].setAttribute('scale', '0');
+          }
+          invalidateCharFilters();
+        }
+        return;
+      }
+
+      if (energyClock < 42 && rounded === lastEnergyLevel) return;
+      energyClock = 0;
+      lastEnergyLevel = rounded;
+
+      var strength = Math.min(3.2, rounded);
+      var freqX = 0.0035 + Math.sin(energyPhase * 0.33) * 0.001;
+      var freqY = 0.055 + strength * 0.028 + Math.sin(energyPhase * 0.52) * 0.015;
+
+      for (var bucket = 1; bucket <= HEAT_BUCKETS; bucket++) {
+        var falloff = bucket / HEAT_BUCKETS;
+        var scale = Math.min(fontSize * 0.2, fontSize * strength * 0.065 * falloff);
+        heatDisplaces[bucket].setAttribute('scale', scale.toFixed(2));
+        heatNoises[bucket].setAttribute('baseFrequency', freqX.toFixed(4) + ' ' + freqY.toFixed(4));
+        heatNoises[bucket].setAttribute('seed', String(2 + Math.floor(energyPhase) % 89));
+      }
+      invalidateCharFilters();
+    }
+
+    function updateHoverCharge(dt) {
+      var previous = hoverCharge;
+      if (hovering) {
+        if (hoverMoveCooldown > 0) {
+          hoverMoveCooldown = Math.max(0, hoverMoveCooldown - dt);
+        }
+
+        var anchorDx = lastMouseX - hoverAnchorX;
+        var anchorDy = lastMouseY - hoverAnchorY;
+        var isStill = hoverMoveCooldown === 0 &&
+          square(anchorDx) + square(anchorDy) <= HOVER_STABILITY.stillRadiusSq;
+
+        if (isStill) {
+          hoverStillMs += dt;
+        } else {
+          hoverStillMs = 0;
+        }
+
+        if (hoverStillMs >= HOVER_STABILITY.stillDelay) {
+          hoverCharge = Math.min(1, hoverCharge + dt / Math.max(config.hoverRamp, 1));
+        } else if (hoverCharge > 0) {
+          hoverCharge = Math.max(0, hoverCharge - dt / HOVER_STABILITY.moveDecay);
+        }
+      } else if (hoverCharge > 0) {
+        hoverCharge = Math.max(0, hoverCharge - dt / Math.max(config.hoverDecay, 1));
+      }
+
+      if (hoverCharge !== previous) {
+        invalidateCharFilters();
+        writeGlowStyle();
+      }
+    }
+
+    function writeTransform(tx, ty) {
+      tx = roundPx(tx);
+      ty = roundPx(ty);
+      var scale = Math.round((1 + hoverCharge * config.hoverBoost * 0.08) * 1000) / 1000;
+      if (tx === transformCache.tx && ty === transformCache.ty && scale === transformCache.scale) return;
+      transformCache.tx = tx;
+      transformCache.ty = ty;
+      transformCache.scale = scale;
+      var s = tx === 0 && ty === 0 ? '' : 'translate(' + tx + 'px,' + ty + 'px)';
+      if (scale !== 1) {
+        s += ' scale(' + scale + ')';
+      }
+      var cloneTx = loopSpan ? tx - loopSpan : tx;
+      var cloneS = cloneTx === 0 && ty === 0 ? '' : 'translate(' + cloneTx + 'px,' + ty + 'px)';
+      if (scale !== 1) {
+        cloneS += ' scale(' + scale + ')';
+      }
+      plEl.style.transform = s;
+      ovEl.style.transform = s;
+      plCloneEl.style.transform = cloneS;
+      ovCloneEl.style.transform = cloneS;
+    }
+
+    var inst = {
+      active: false,
+      invalidateRect: function() { cachedRect = null; },
+      step: function(dt) {
+        if (!inViewport || !measured) {
+          this.active = false;
+          return;
+        }
+        updateHoverCharge(dt);
+        writeEnergyStyle(dt);
+        if (autoAnimating && !hovering) {
+          autoX = normalizeLoopX(autoX + speedPxPerMs * dt);
+          currentX = autoX;
+          currentY = plInitTop;
+          writeTransform(currentX - plInitLeft, 0);
+          applyEffects();
+        } else {
+          var ease = hovering ? EASE_IN : EASE_OUT;
+          var factor = 1 - Math.pow(1 - ease, dt / FRAME_MS);
+          currentX += (targetX - currentX) * factor;
+          currentY += (targetY - currentY) * factor;
+          writeTransform(currentX - plInitLeft, currentY - plInitTop);
+          applyEffects();
+
+          if (!hovering) {
+            var dx = targetX - currentX;
+            var dy = targetY - currentY;
+            if (square(dx) + square(dy) < SETTLE_SQ) {
+              currentX = targetX;
+              currentY = targetY;
+              autoX = currentX;
+              autoAnimating = true;
+            }
+          }
+        }
+      }
+    };
+
+    instances.push(inst);
+    ensureScrollListener();
+
+    function chooseActiveOffset(rawTargetX) {
+      if (!loopSpan) return 0;
+      var mainDist = Math.abs(currentX - rawTargetX);
+      var cloneDist = Math.abs((currentX - loopSpan) - rawTargetX);
+      return cloneDist < mainDist ? loopSpan : 0;
+    }
+
+    function activateHover(e) {
+      if (motionQuery.matches || !measured) return;
+      var wasHovering = hovering;
+      hovering = true;
+      autoAnimating = false;
+
+      if (!wasHovering) {
+        resetHoverStability(e.clientX, e.clientY);
+      } else {
+        var moveDx = e.clientX - lastMouseX;
+        var moveDy = e.clientY - lastMouseY;
+        if (square(moveDx) + square(moveDy) > HOVER_STABILITY.moveEpsilonSq) {
+          hoverMoveCooldown = HOVER_STABILITY.moveCooldown;
+        }
+
+        var driftDx = e.clientX - hoverAnchorX;
+        var driftDy = e.clientY - hoverAnchorY;
+        if (square(driftDx) + square(driftDy) > HOVER_STABILITY.stillRadiusSq) {
+          resetHoverStability(e.clientX, e.clientY);
+          hoverMoveCooldown = HOVER_STABILITY.moveCooldown;
+        }
+      }
+
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+      if (!cachedRect) cachedRect = el.getBoundingClientRect();
+      var rawTargetX = (e.clientX - cachedRect.left) - plHalfW;
+      if (!wasHovering) {
+        activeOffset = chooseActiveOffset(rawTargetX);
+      }
+      targetX = rawTargetX + activeOffset;
+      targetY = (e.clientY - cachedRect.top) - halfHeight;
+      if (!inst.active) {
+        inst.active = true;
+        startLoop();
+      }
+    }
+
+    function onMousemove(e) {
+      activateHover(e);
+    }
+
+    function onMouseleave() {
+      if (!measured) return;
+      hovering = false;
+      resetHoverStability(lastMouseX, lastMouseY);
+      activeOffset = 0;
+      autoX = normalizeLoopX(currentX);
+      currentX = autoX;
+      targetX = currentX;
+      targetY = plInitTop;
+      autoAnimating = true;
+      if (!inst.active) {
+        inst.active = true;
+        startLoop();
+      }
+    }
+
+    el.addEventListener('mouseenter', activateHover, passiveEventOptions);
+    el.addEventListener('mousemove', onMousemove, passiveEventOptions);
+    el.addEventListener('mouseleave', onMouseleave, passiveEventOptions);
+
+    var resizeTimer;
+    var ro = null;
+    var io = null;
+
+    function scheduleMeasure() {
+      if (destroyed) return;
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(measure, 150);
+    }
+
+    if (typeof ResizeObserver === 'function') {
+      ro = new ResizeObserver(scheduleMeasure);
+      ro.observe(el);
+    } else {
+      window.addEventListener('resize', scheduleMeasure, passiveEventOptions);
+    }
+
+    function onMotionPref() {
+      if (destroyed) return;
+      if (motionQuery.matches) {
+        hovering = false;
+        autoAnimating = false;
+        currentX = plInitLeft;
+        currentY = plInitTop;
+        targetX = plInitLeft;
+        targetY = plInitTop;
+        activeOffset = 0;
+        plEl.style.transform = '';
+        ovEl.style.transform = '';
+        plCloneEl.style.transform = '';
+        ovCloneEl.style.transform = '';
+        transformCache = resetTransformCache();
+        hoverCharge = 0;
+        resetHoverStability(lastMouseX, lastMouseY);
+        lastGlowIntensity = NaN;
+        lastEnergyLevel = NaN;
+        writeGlowStyle();
+        writeEnergyStyle(0);
+        invalidateCharFilters();
+        applyEffects();
+        inst.active = false;
+      } else {
+        autoAnimating = true;
+        autoX = plInitLeft;
+        if (inViewport && measured) {
+          inst.active = true;
+          startLoop();
+        }
+      }
+    }
+    addMotionListener(onMotionPref);
+
+    if (typeof IntersectionObserver === 'function') {
+      io = new IntersectionObserver(function(entries) {
+        if (destroyed || !entries.length) return;
+        inViewport = entries[0].isIntersecting;
+        if (inViewport && autoAnimating && !motionQuery.matches && measured) {
+          inst.active = true;
+          startLoop();
+        }
+      });
+      io.observe(el);
+    }
+
+    measure();
+
+    el._superchargeDestroy = function() {
+      destroyed = true;
+      var idx = instances.indexOf(inst);
+      if (idx !== -1) instances.splice(idx, 1);
+      releaseScrollListenerIfIdle();
+      inst.active = false;
+      el.removeEventListener('mouseenter', activateHover, passiveEventOptions);
+      el.removeEventListener('mousemove', onMousemove, passiveEventOptions);
+      el.removeEventListener('mouseleave', onMouseleave, passiveEventOptions);
+      removeMotionListener(onMotionPref);
+      if (ro) {
+        ro.disconnect();
+      } else {
+        window.removeEventListener('resize', scheduleMeasure, passiveEventOptions);
+      }
+      if (io) io.disconnect();
+      if (filterSvg.parentNode) {
+        filterSvg.parentNode.removeChild(filterSvg);
+      }
+      clearTimeout(resizeTimer);
+      el.removeAttribute('aria-label');
+      el.removeAttribute('role');
+      el.textContent = originalText;
+      delete el._superchargeDestroy;
+    };
+  }
+
+  function init() {
+    var els = document.querySelectorAll('.supercharge');
+    if (!els.length) return;
+
+    function initAll() {
+      for (var i = 0; i < els.length; i++) {
+        initSupercharge(els[i]);
+      }
+    }
+
+    if (typeof document.fonts !== 'undefined' && document.fonts.ready) {
+      document.fonts.ready.then(initAll, initAll);
+    } else {
+      initAll();
+    }
+  }
+
+  window.SuperchargeExperiment = {
+    defaults: R,
+    init: initSupercharge,
+    refresh: function(el) {
+      if (!el) return;
+      initSupercharge(el);
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+
+(function() {
+  if (window.SuperchargeExperiment && !window.SuperchargeText) {
+    window.SuperchargeText = window.SuperchargeExperiment;
+  }
+})();
