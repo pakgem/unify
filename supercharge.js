@@ -174,16 +174,30 @@
   function createsBlendTrap(style) {
     if (!style) return false;
 
+    var position = style.position;
+    var zIndex = style.zIndex;
+    var opacity = parseFloat(style.opacity);
+
+    if (zIndex && zIndex !== 'auto' && (
+      position === 'relative' ||
+      position === 'absolute' ||
+      position === 'fixed' ||
+      position === 'sticky'
+    )) return true;
+    if (isFinite(opacity) && opacity < 1) return true;
     if (style.transform && style.transform !== 'none') return true;
     if (style.filter && style.filter !== 'none') return true;
     if (style.backdropFilter && style.backdropFilter !== 'none') return true;
     if (style.webkitBackdropFilter && style.webkitBackdropFilter !== 'none') return true;
     if (style.perspective && style.perspective !== 'none') return true;
+    if (style.mixBlendMode && style.mixBlendMode !== 'normal') return true;
+    if (style.clipPath && style.clipPath !== 'none') return true;
     if (style.isolation === 'isolate') return true;
     if (hasPaintContainment(style.contain)) return true;
     if (style.willChange && style.willChange !== 'auto' && (
       containsToken(style.willChange, 'transform') ||
       containsToken(style.willChange, 'filter') ||
+      containsToken(style.willChange, 'opacity') ||
       containsToken(style.willChange, 'perspective') ||
       containsToken(style.willChange, 'contain')
     )) return true;
@@ -507,15 +521,19 @@
     var plCloneEl = createHtmlSpan('sc-plus-lighter');
     el.appendChild(plCloneEl);
 
-    var disableBlendLayers = readBooleanFlag(el.dataset.scNoOvals) || readBooleanFlag(el.dataset.scNoBlend);
+    var disableBlendLayers =
+      readBooleanFlag(el.dataset.scNoOvals) ||
+      readBooleanFlag(el.dataset.scNoBlend) ||
+      readBooleanFlag(el.dataset.scForceFallback);
     var blendTrapAncestor = disableBlendLayers ? null : findBlendTrapAncestor(el);
     if (blendTrapAncestor) {
       disableBlendLayers = true;
       warnBlendTrapOnce(el, blendTrapAncestor);
     }
     if (disableBlendLayers) {
+      el.style.zIndex = '0';
       for (var j = 0; j < spans.length; j++) {
-        spans[j].style.zIndex = '0';
+        spans[j].style.zIndex = '1';
       }
       ovEl.style.display = 'none';
       plEl.style.display = 'none';
