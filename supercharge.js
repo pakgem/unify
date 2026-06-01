@@ -154,6 +154,41 @@
       CSS.supports('color', value);
   }
 
+  function parseRgbChannels(value) {
+    if (!value) return null;
+    var probe = document.createElement('span');
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    probe.style.pointerEvents = 'none';
+    probe.style.color = value;
+    (document.body || document.documentElement).appendChild(probe);
+    var computed = window.getComputedStyle(probe).color;
+    if (probe.parentNode) {
+      probe.parentNode.removeChild(probe);
+    }
+    var match = computed && computed.match(/rgba?\(([^)]+)\)/i);
+    if (!match) return null;
+    var parts = match[1].trim().split(/[,\s\/]+/).filter(Boolean);
+    if (parts.length < 3) return null;
+    var r = parseFloat(parts[0]);
+    var g = parseFloat(parts[1]);
+    var b = parseFloat(parts[2]);
+    if (!isFinite(r) || !isFinite(g) || !isFinite(b)) return null;
+    return {
+      r: clamp(r, 0, 255),
+      g: clamp(g, 0, 255),
+      b: clamp(b, 0, 255)
+    };
+  }
+
+  function mixRgbChannels(from, to, amount) {
+    var t = clamp(amount, 0, 1);
+    var r = Math.round(from.r + (to.r - from.r) * t);
+    var g = Math.round(from.g + (to.g - from.g) * t);
+    var b = Math.round(from.b + (to.b - from.b) * t);
+    return 'rgb(' + r + ', ' + g + ', ' + b + ')';
+  }
+
   function readBooleanFlag(value) {
     if (typeof value !== 'string') return false;
     var normalized = value.trim().toLowerCase();
@@ -484,6 +519,10 @@
     var n = units.length;
     if (!n) return;
     var config = readConfig(el);
+    var baseTextColor = parseRgbChannels(window.getComputedStyle(el).color) || { r: 36, g: 30, b: 32 };
+    var targetTintColor = parseRgbChannels(
+      (el.dataset.scColor && isUsableColor(el.dataset.scColor)) ? el.dataset.scColor : '#FE3C01'
+    ) || { r: 254, g: 60, b: 1 };
 
     var coverCount = clamp(parseInt(el.dataset.scCover, 10) || 4, 1, n);
 
@@ -520,6 +559,7 @@
 
     var plCloneEl = createHtmlSpan('sc-plus-lighter');
     el.appendChild(plCloneEl);
+    var useContainedTintFallback = false;
 
     var disableBlendLayers =
       readBooleanFlag(el.dataset.scNoOvals) ||
@@ -535,6 +575,7 @@
       for (var j = 0; j < spans.length; j++) {
         spans[j].style.zIndex = '1';
       }
+      useContainedTintFallback = true;
       ovEl.style.display = 'none';
       plEl.style.display = 'none';
       ovCloneEl.style.display = 'none';
@@ -552,6 +593,8 @@
     var centersY = new Float64Array(n);
     var prevBlurs = new Float32Array(n);
     var prevHaze = new Int16Array(n);
+    var prevTints = new Float32Array(n);
+    prevTints.fill(-1);
 
     var fontSize = 0;
     var plInitLeft = 0, plInitTop = 0, plWidth = 0, sharedHeight = 0;
@@ -586,6 +629,7 @@
     function invalidateCharFilters() {
       prevBlurs.fill(-1);
       prevHaze.fill(-1);
+      prevTints.fill(-1);
     }
 
     function resetHoverStability(x, y) {
@@ -758,6 +802,9 @@
 
         var hazeProximity = proximity * proximity * proximity;
         writeCharFilter(i, blur, hazeLevel * hazeProximity);
+        if (useContainedTintFallback) {
+          writeCharTint(i, proximity);
+        }
       }
     }
 
@@ -790,6 +837,18 @@
         filter += 'blur(' + blur + 'px) ';
       }
       spans[i].style.filter = filter + BASE_FILTER;
+    }
+
+    function writeCharTint(i, proximity) {
+      var tintAmount = clamp(proximity * 1.08 + hoverCharge * proximity * 0.2, 0, 1);
+      var roundedTint = Math.round(tintAmount * 40) / 40;
+      if (roundedTint === prevTints[i]) return;
+      prevTints[i] = roundedTint;
+      if (roundedTint <= 0.001) {
+        spans[i].style.color = '';
+        return;
+      }
+      spans[i].style.color = mixRgbChannels(baseTextColor, targetTintColor, roundedTint);
     }
 
     function writeGlowStyle() {
