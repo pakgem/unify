@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.10] - 2026-06-01
+
+Contain supercharge glow in stacking-context layouts.
+
+
 ## [1.14.9] - 2026-06-01
 
 Restore exact reference behavior/styles
