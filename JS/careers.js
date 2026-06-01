@@ -2,7 +2,8 @@
   "use strict";
 
   const ASHBY_JOB_BOARD_URL =
-    "https://api.ashbyhq.com/posting-api/job-board/unify";
+    "https://jobs.ashbyhq.com/api/non-user-graphql?op=ApiJobBoardWithTeams";
+  const ASHBY_ORG_SLUG = "unify";
   const CAREER_ICON_SRC =
     "https://cdn.prod.website-files.com/65a7e0cdd5ac0838035bd1af/65a7e0cdd5ac0838035bd1e2_right-caret.svg";
 
@@ -30,11 +31,26 @@
   }
 
   function fetchJobs() {
+    const body = JSON.stringify({
+      operationName: "ApiJobBoardWithTeams",
+      variables: {
+        organizationHostedJobsPageName: ASHBY_ORG_SLUG,
+      },
+      query:
+        "query ApiJobBoardWithTeams($organizationHostedJobsPageName: String!) { " +
+        "jobBoardWithTeams(organizationHostedJobsPageName: $organizationHostedJobsPageName) { " +
+        "teams { id name externalName parentTeamId } " +
+        "jobPostings { id title teamId locationName workplaceType employmentType compensationTierSummary secondaryLocations { locationName } } " +
+        "} }",
+    });
+
     return fetch(ASHBY_JOB_BOARD_URL, {
-      method: "GET",
+      method: "POST",
       headers: {
         Accept: "application/json",
+        "Content-Type": "application/json",
       },
+      body,
     })
       .then((response) => {
         if (!response.ok) {
@@ -43,7 +59,45 @@
         return response.json();
       })
       .then((data) => {
-        const jobs = Array.isArray(data?.jobs) ? data.jobs : [];
+        if (Array.isArray(data?.errors) && data.errors.length) {
+          throw new Error(data.errors[0]?.message || "Ashby GraphQL error");
+        }
+
+        const board =
+          data?.data?.jobBoardWithTeams || data?.data?.jobBoard || null;
+        const teams = Array.isArray(board?.teams) ? board.teams : [];
+        const teamNameById = new Map(
+          teams.map((team) => [
+            team.id,
+            team.externalName || team.name || "Other",
+          ]),
+        );
+        const postings = Array.isArray(board?.jobPostings)
+          ? board.jobPostings
+          : [];
+        const jobs = postings.map((posting) => {
+          const teamName = teamNameById.get(posting.teamId) || "Other";
+          return {
+            id: posting.id,
+            title: posting.title,
+            department: teamName,
+            employmentType: posting.employmentType,
+            location: posting.locationName,
+            secondaryLocations: Array.isArray(posting.secondaryLocations)
+              ? posting.secondaryLocations.map((loc) => ({
+                  location: loc.locationName,
+                }))
+              : [],
+            isListed: true,
+            workplaceType: posting.workplaceType || "",
+            jobUrl: posting.id
+              ? "https://jobs.ashbyhq.com/unify/" + posting.id
+              : "",
+            applyUrl: posting.id
+              ? "https://jobs.ashbyhq.com/unify/" + posting.id + "/application"
+              : "",
+          };
+        });
         return jobs.filter((job) => job && job.isListed);
       });
   }
@@ -112,8 +166,8 @@
       new Set(
         jobs
           .map((job) => job.department)
-          .filter((department) => typeof department === "string" && department)
-      )
+          .filter((department) => typeof department === "string" && department),
+      ),
     ).sort((a, b) => a.localeCompare(b));
   }
 
@@ -136,7 +190,7 @@
     container.textContent = "";
 
     const departmentNames = Array.from(groupedJobs.keys()).sort((a, b) =>
-      a.localeCompare(b)
+      a.localeCompare(b),
     );
 
     let hasRenderedAny = false;
@@ -253,28 +307,24 @@
 
     const secondaryLocations = Array.isArray(job.secondaryLocations)
       ? job.secondaryLocations
-          .map((loc) =>
-            typeof loc?.location === "string" ? loc.location : ""
-          )
+          .map((loc) => (typeof loc?.location === "string" ? loc.location : ""))
           .filter(Boolean)
       : [];
 
     const uniqueLocations = Array.from(
       new Set(
         [primaryLocation, ...secondaryLocations].filter(
-          (location) => typeof location === "string" && location
-        )
-      )
+          (location) => typeof location === "string" && location,
+        ),
+      ),
     );
 
     locations.push(...uniqueLocations);
 
     const hasSF = locations.some((loc) =>
-      /san francisco/i.test(String(loc || ""))
+      /san francisco/i.test(String(loc || "")),
     );
-    const hasNYC = locations.some((loc) =>
-      /new york/i.test(String(loc || ""))
-    );
+    const hasNYC = locations.some((loc) => /new york/i.test(String(loc || "")));
 
     let locationLabel = "";
 
@@ -290,14 +340,32 @@
       locationLabel = "Location flexible";
     }
 
-    const workMode =
-      job.isRemote === true
-        ? "Hybrid"
-        : job.isRemote === false
-        ? "On-site"
-        : "";
+    const workMode = getWorkMode(locations, job);
+
+    if (workMode && /remote/i.test(workMode) && /remote/i.test(locationLabel)) {
+      return workMode;
+    }
 
     return workMode ? locationLabel + " • " + workMode : locationLabel;
+  }
+
+  function getWorkMode(locations, job) {
+    if (typeof job?.workplaceType === "string" && job.workplaceType) {
+      if (job.workplaceType === "Hybrid") return "Hybrid";
+      if (job.workplaceType === "OnSite") return "On-site";
+      if (job.workplaceType === "Remote") return "Remote";
+    }
+
+    const locationText = locations.join(" ").toLowerCase();
+
+    if (locationText.includes("remote")) return "Remote";
+    if (locationText.includes("hybrid")) return "Hybrid";
+    if (locations.length) return "On-site";
+
+    if (job?.isRemote === true) return "Hybrid";
+    if (job?.isRemote === false) return "On-site";
+
+    return "";
   }
 
   function renderEmptyState(container) {
