@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.9] - 2026-06-01
+
+Restore exact reference behavior/styles
+
+
 ## [1.14.8] - 2026-06-01
 
 Release supercharge glow containment
