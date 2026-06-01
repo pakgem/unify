@@ -514,6 +514,9 @@
       warnBlendTrapOnce(el, blendTrapAncestor);
     }
     if (disableBlendLayers) {
+      for (var j = 0; j < spans.length; j++) {
+        spans[j].style.zIndex = '0';
+      }
       ovEl.style.display = 'none';
       plEl.style.display = 'none';
       ovCloneEl.style.display = 'none';
