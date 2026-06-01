@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.4] - 2026-06-01
+
+Isolate supercharge effect stack in Webflow
+
+
 ## [1.14.3] - 2026-06-01
 
 Fix supercharge text visibility in Webflow
