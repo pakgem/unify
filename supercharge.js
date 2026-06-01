@@ -18,6 +18,7 @@
   var lastTime = 0;
   var motionQuery = getMotionQuery();
   var scrollListenerBound = false;
+  var warnedBlendTrapAncestors = [];
   var objectHasOwn = Object.prototype.hasOwnProperty;
   var passiveEventOptions = getPassiveEventOptions();
 
@@ -151,6 +152,80 @@
       typeof CSS === 'undefined' ||
       typeof CSS.supports !== 'function' ||
       CSS.supports('color', value);
+  }
+
+  function readBooleanFlag(value) {
+    if (typeof value !== 'string') return false;
+    var normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+  }
+
+  function containsToken(value, token) {
+    return typeof value === 'string' && value.indexOf(token) !== -1;
+  }
+
+  function hasPaintContainment(value) {
+    return containsToken(value, 'paint') ||
+      containsToken(value, 'layout') ||
+      containsToken(value, 'strict') ||
+      containsToken(value, 'content');
+  }
+
+  function createsBlendTrap(style) {
+    if (!style) return false;
+
+    if (style.transform && style.transform !== 'none') return true;
+    if (style.filter && style.filter !== 'none') return true;
+    if (style.backdropFilter && style.backdropFilter !== 'none') return true;
+    if (style.webkitBackdropFilter && style.webkitBackdropFilter !== 'none') return true;
+    if (style.perspective && style.perspective !== 'none') return true;
+    if (style.isolation === 'isolate') return true;
+    if (hasPaintContainment(style.contain)) return true;
+    if (style.willChange && style.willChange !== 'auto' && (
+      containsToken(style.willChange, 'transform') ||
+      containsToken(style.willChange, 'filter') ||
+      containsToken(style.willChange, 'perspective') ||
+      containsToken(style.willChange, 'contain')
+    )) return true;
+
+    return false;
+  }
+
+  function findBlendTrapAncestor(el) {
+    var parent = el.parentElement;
+    while (parent && parent.nodeType === 1) {
+      if (createsBlendTrap(window.getComputedStyle(parent))) {
+        return parent;
+      }
+      parent = parent.parentElement;
+    }
+    return null;
+  }
+
+  function formatNodeSelector(node) {
+    if (!node || !node.tagName) return '<unknown>';
+    var tag = node.tagName.toLowerCase();
+    var id = node.id ? '#' + node.id : '';
+    var classes = '';
+    if (typeof node.className === 'string' && node.className.trim()) {
+      classes = '.' + node.className.trim().replace(/\s+/g, '.');
+    }
+    return tag + id + classes;
+  }
+
+  function warnBlendTrapOnce(wordEl, ancestorEl) {
+    if (!ancestorEl) return;
+    if (warnedBlendTrapAncestors.indexOf(ancestorEl) !== -1) return;
+    warnedBlendTrapAncestors.push(ancestorEl);
+    if (window.console && typeof window.console.warn === 'function') {
+      window.console.warn(
+        '[supercharge] blend-layer fallback enabled for',
+        formatNodeSelector(wordEl),
+        'because ancestor',
+        formatNodeSelector(ancestorEl),
+        'creates a stacking context (transform/filter/isolation/contain).'
+      );
+    }
   }
 
   function createHtmlSpan(className, text) {
@@ -431,6 +506,19 @@
 
     var plCloneEl = createHtmlSpan('sc-plus-lighter');
     el.appendChild(plCloneEl);
+
+    var disableBlendLayers = readBooleanFlag(el.dataset.scNoOvals) || readBooleanFlag(el.dataset.scNoBlend);
+    var blendTrapAncestor = disableBlendLayers ? null : findBlendTrapAncestor(el);
+    if (blendTrapAncestor) {
+      disableBlendLayers = true;
+      warnBlendTrapOnce(el, blendTrapAncestor);
+    }
+    if (disableBlendLayers) {
+      ovEl.style.display = 'none';
+      plEl.style.display = 'none';
+      ovCloneEl.style.display = 'none';
+      plCloneEl.style.display = 'none';
+    }
 
     var heatFilters = createHeatFilterBank('sc-heat-haze-' + Math.random().toString(36).slice(2));
     var heatFilterUrls = heatFilters.urls;
