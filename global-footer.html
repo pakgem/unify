@@ -1,0 +1,519 @@
+<!-- ================= Core Libraries ================= -->
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/js-cookie/3.0.1/js.cookie.min.js"
+  defer
+></script>
+<script
+  defer
+  src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"
+></script>
+<!-- Managed in JS/global.js: LinkedIn, Navattic, OneTrust, GTM, GA, Segment, Twitter, testing data. -->
+<script
+  defer
+  src="https://cdn.jsdelivr.net/gh/pakgem/unify@v1.13.0/JS/global.min.js"
+></script>
+
+<!-- ================= Supercharge Glow Effect ================= a
+<script
+  src="https://cdn.prod.website-files.com/69ab6e0360675acdbd1f014f/6a22050943be4feca1ca252a_supercharge-text.txt"
+></script>
+
+<!-- ================= Supercharge Glow Effect V2 - Mobile Fallback ================= -->
+<script
+  async
+  src="https://cdn.prod.website-files.com/69ab6e0360675acdbd1f014f/6a3a639150f003377096e3b5_supercharge-text.txt"
+></script>
+<!-- ================= Deferred Analytics ================= -->
+<script>
+  (function setupDeferredAnalytics() {
+    var interactionEvents = [
+      "pointerdown",
+      "keydown",
+      "touchstart",
+      "wheel",
+      "scroll",
+    ];
+
+    function loadScript(src, attrs) {
+      var s = document.createElement("script");
+      s.src = src;
+      s.async = true;
+      if (attrs) {
+        Object.keys(attrs).forEach(function (key) {
+          s.setAttribute(key, attrs[key]);
+        });
+      }
+      document.head.appendChild(s);
+      return s;
+    }
+
+    function loadPixel(src) {
+      var img = new Image(1, 1);
+      img.decoding = "async";
+      img.loading = "lazy";
+      img.src = src;
+    }
+
+    function onIdle(cb, timeout) {
+      var run = function () {
+        if (typeof window.requestIdleCallback === "function") {
+          window.requestIdleCallback(cb, { timeout: timeout || 3000 });
+        } else {
+          window.setTimeout(cb, timeout || 3000);
+        }
+      };
+
+      if (document.readyState === "complete") run();
+      else window.addEventListener("load", run, { once: true });
+    }
+
+    function afterInteraction(cb, fallbackDelay) {
+      var done = false;
+
+      function run() {
+        if (done) return;
+        done = true;
+        interactionEvents.forEach(function (name) {
+          window.removeEventListener(name, run);
+        });
+        cb();
+      }
+
+      interactionEvents.forEach(function (name) {
+        window.addEventListener(name, run, { once: true, passive: true });
+      });
+
+      window.setTimeout(run, fallbackDelay || 8000);
+    }
+
+    window.__unifyDefer = onIdle;
+
+    function loadUnifyTag() {
+      if (window.unify && document.getElementById("unifytag")) return;
+
+      window.unify ||
+        (window.unify = Object.assign(
+          [],
+          [
+            "identify",
+            "page",
+            "track",
+            "startAutoPage",
+            "stopAutoPage",
+            "startAutoIdentify",
+            "stopAutoIdentify",
+          ].reduce(function (t, e) {
+            t[e] = function () {
+              unify.push([e, [].slice.call(arguments)]);
+              return unify;
+            };
+            return t;
+          }, {}),
+        ));
+
+      loadScript(
+        "https://tag.unifyintent.com/v1/AKUXjLHgk642jVe4ZNwfEK/script-staging.js",
+        {
+          "data-api-key": "wk_5fTtsDLJ_7vx9DsjPcr79yk4FweES727w59pxS8EJ",
+          id: "unifytag",
+        },
+      );
+    }
+
+    function loadPostHog() {
+      if (window.posthog && window.posthog.__loaded) return;
+
+      !(function (t, e) {
+        var o, n, p, r;
+        e.__SV ||
+          ((window.posthog = e),
+          (e._i = []),
+          (e.init = function (i, s, a) {
+            function g(t, e) {
+              var o = e.split(".");
+              if (o.length === 2) {
+                t = t[o[0]];
+                e = o[1];
+              }
+              t[e] = function () {
+                t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+              };
+            }
+
+            p = t.createElement("script");
+            p.type = "text/javascript";
+            p.crossOrigin = "anonymous";
+            p.async = true;
+            p.src =
+              s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") +
+              "/static/array.js";
+            r = t.getElementsByTagName("script")[0];
+            r.parentNode.insertBefore(p, r);
+
+            var u = e;
+            if (a !== undefined) u = e[a] = [];
+            else a = "posthog";
+
+            o =
+              "init capture identify setPersonProperties group reset alias register register_once unregister get_distinct_id get_session_id get_session_replay_url opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing".split(
+                " ",
+              );
+            for (n = 0; n < o.length; n++) g(u, o[n]);
+            e._i.push([i, s, a]);
+          }),
+          (e.__SV = 1));
+      })(document, window.posthog || []);
+
+      posthog.init("phc_eLELdjMUDABB8Qg0pC0poaktw8fhGHcBFDGR2z7Q4a8", {
+        api_host: "https://us.i.posthog.com",
+        defaults: "2025-11-30",
+        person_profiles: "always",
+        before_send: function (event) {
+          if (!event) return null;
+          if (event && ["$web_vitals", "$dead_click"].includes(event.event)) {
+            return Math.random() < 0.1 ? event : null; // keep 10% of those
+          }
+          var sessionId = posthog.get_session_id();
+          // var hash = sessionId.split('').reduce(function (acc, c) {
+          //   return acc + c.charCodeAt(0);
+          // }, 0);
+          // if (hash % 2 === 0) return null;
+          return event;
+        },
+      });
+    }
+
+    function loadLateMarketing() {
+      loadScript("https://js-na1.hs-scripts.com/24175735.js", {
+        id: "hs-script-loader",
+        type: "text/javascript",
+      });
+
+      loadScript(
+        "https://cdn.coframe.com/cf.min.js?project_id=670427d6dc1ce6f58de0205b",
+      );
+      loadScript(
+        "https://tag.clearbitscripts.com/v1/pk_1326c5292f347bfa6e6680d70eb4e722/tags.js",
+      );
+      loadScript("https://pixel-cdn.default.com", {
+        "data-default-pixel": "true",
+      });
+      loadPixel(
+        "https://trkn.us/pixel/conv/ppt=25951;g=sitewide;gid=66240;ord=" +
+          Date.now(),
+      );
+    }
+
+    function loadVectorAndReB2B() {
+      if (!window.vector) {
+        window.vector = { q: [] };
+        ["load", "identify", "on"].forEach(function (name) {
+          window.vector[name] = function () {
+            window.vector.q.push([name, Array.prototype.slice.call(arguments)]);
+          };
+        });
+        loadScript("https://cdn.vector.co/pixel.js");
+        vector.load("f5dcb697-f6c6-4c88-b831-1e60b4254820");
+      }
+
+      if (!window.reb2b) {
+        window.reb2b = { loaded: true };
+        loadScript(
+          "https://ddwl4m2hdecbv.cloudfront.net/b/961Y0HD1XLNG/961Y0HD1XLNG.js.gz",
+        );
+      }
+    }
+
+    onIdle(function () {
+      loadUnifyTag();
+      loadPostHog();
+    }, 3000);
+
+    afterInteraction(function () {
+      onIdle(function () {
+        loadLateMarketing();
+        loadVectorAndReB2B();
+      }, 1500);
+    }, 8000);
+  })();
+</script>
+
+<!-- ================= Fallbacks ================= -->
+<noscript>
+  <img
+    height="1"
+    width="1"
+    style="display: none"
+    alt=""
+    src="https://px.ads.linkedin.com/collect/?pid=6129522&fmt=gif"
+  />
+</noscript>
+
+<noscript>
+  <iframe
+    src="https://www.googletagmanager.com/ns.html?id=GTM-5NKFVR3"
+    height="0"
+    width="0"
+    style="display: none; visibility: hidden"
+  ></iframe>
+</noscript>
+
+<!-- ================= Logo footer drag ================= -->
+<script>
+  (function () {
+    var SRC =
+      "https://cdn.prod.website-files.com/69ab6e0360675acdbd1f014f/6a2a498f99570e6f8d6a4359_bb9e7b76488ed1e77331ffa4a379cab0_unify-footer-logo-drag.min.txt";
+    var loaded = false;
+
+    function load() {
+      if (loaded) return;
+      loaded = true;
+
+      var s = document.createElement("script");
+      s.src = SRC;
+      s.async = true;
+      document.head.appendChild(s);
+    }
+
+    window.addEventListener(
+      "load",
+      function () {
+        var logo = document.querySelector(".footer_logo");
+        if (!logo) return;
+
+        logo.addEventListener("pointerenter", load, {
+          once: true,
+          passive: true,
+        });
+        logo.addEventListener("touchstart", load, {
+          once: true,
+          passive: true,
+        });
+
+        if ("IntersectionObserver" in window) {
+          var io = new IntersectionObserver(
+            function (entries) {
+              if (
+                !entries.some(function (e) {
+                  return e.isIntersecting;
+                })
+              )
+                return;
+              io.disconnect();
+              load();
+            },
+            { rootMargin: "900px 0px" },
+          );
+
+          io.observe(logo);
+        } else {
+          load();
+        }
+      },
+      { once: true },
+    );
+  })();
+</script>
+
+<script>
+  (function () {
+    if (!("modelContext" in window.navigator)) return;
+
+    navigator.modelContext.provideContext({
+      tools: [
+        {
+          name: "request_unify_demo",
+          description:
+            "Open Unify's get-started page to request a demo or talk to sales. Use when the user wants to see Unify in action, talk to a human, or evaluate Unify for their team.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async () => {
+            window.location.href = "/get-started";
+            return { status: "navigated", url: "/get-started" };
+          },
+        },
+        {
+          name: "start_unify_trial",
+          description:
+            "Start a self-serve free trial of Unify. Use when the user wants to try Unify without booking a demo.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async () => {
+            window.location.href = "/self-serve-trial";
+            return { status: "navigated", url: "/self-serve-trial" };
+          },
+        },
+        {
+          name: "view_pricing",
+          description:
+            "Open Unify's pricing page. Use when the user asks how much Unify costs, what plans are available, or wants to compare tiers.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async () => {
+            window.location.href = "/pricing";
+            return { status: "navigated", url: "/pricing" };
+          },
+        },
+        {
+          name: "view_customer_stories",
+          description:
+            "Open Unify's customer stories page. Use when the user asks for case studies, customer examples, social proof, or who uses Unify. Notable customers include Perplexity, Justworks, Anrok, Together AI, Navattic, and Spellbook.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async () => {
+            window.location.href = "/customers";
+            return { status: "navigated", url: "/customers" };
+          },
+        },
+        {
+          name: "compare_unify_to_competitor",
+          description:
+            "Open a side-by-side comparison page between Unify and a named competitor. Use when the user asks 'Unify vs X', 'how does Unify compare to X', or wants alternatives evaluation.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              competitor: {
+                type: "string",
+                enum: [
+                  "11x",
+                  "aisdr",
+                  "apollo",
+                  "artisan",
+                  "bombora",
+                  "champify",
+                  "clay",
+                  "outreach",
+                  "rb2b",
+                  "salesloft",
+                  "usergems",
+                  "other-intent-signal-providers",
+                ],
+                description:
+                  "Competitor identifier. Must be one of the listed values.",
+              },
+            },
+            required: ["competitor"],
+          },
+          execute: async ({ competitor }) => {
+            const url = `/comparison/${competitor}`;
+            window.location.href = url;
+            return { status: "navigated", url };
+          },
+        },
+        {
+          name: "view_solution_by_role",
+          description:
+            "Open the Unify solution page tailored to a specific go-to-market role or motion. Use when the user identifies as a sales/marketing/RevOps/growth leader or asks how Unify fits a specific GTM motion.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              role: {
+                type: "string",
+                enum: [
+                  "sales",
+                  "marketing",
+                  "revops",
+                  "growth",
+                  "product-led-growth",
+                  "sales-led-growth",
+                  "expansions",
+                ],
+                description:
+                  "Role or GTM motion. Must be one of the listed values.",
+              },
+            },
+            required: ["role"],
+          },
+          execute: async ({ role }) => {
+            const url = `/solutions/${role}`;
+            window.location.href = url;
+            return { status: "navigated", url };
+          },
+        },
+        {
+          name: "view_signal_type",
+          description:
+            "Open a Unify signals page describing a specific intent signal source. Use when the user asks about a specific signal type like website intent, champion tracking, new hires, or product usage.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              signal: {
+                type: "string",
+                enum: [
+                  "website-intent",
+                  "champion-tracking",
+                  "new-hires",
+                  "product-usage",
+                  "infinity-signal",
+                  "lookalikes",
+                  "email-intent",
+                  "g2",
+                  "hubspot",
+                  "salesforce",
+                ],
+                description: "Signal type. Must be one of the listed values.",
+              },
+            },
+            required: ["signal"],
+          },
+          execute: async ({ signal }) => {
+            const url = `/signals/${signal}`;
+            window.location.href = url;
+            return { status: "navigated", url };
+          },
+        },
+        {
+          name: "view_recent_product_updates",
+          description:
+            "Open Unify's changelog showing recent product releases and updates. Use when the user asks what's new, what shipped recently, or about specific feature releases.",
+          inputSchema: { type: "object", properties: {} },
+          execute: async () => {
+            window.location.href = "/changelog";
+            return { status: "navigated", url: "/changelog" };
+          },
+        },
+      ],
+    });
+  })();
+</script>
+
+<script>
+  (function () {
+    function getText(el) {
+      return (
+        el.getAttribute("data-cta-name") ||
+        el.getAttribute("aria-label") ||
+        el.innerText ||
+        el.textContent ||
+        ""
+      )
+        .trim()
+        .slice(0, 120);
+    }
+
+    function trackButtonClick(el) {
+      var props = {
+        cta_name: getText(el),
+        cta_location: el.getAttribute("data-cta-location") || "",
+        cta_href: el.href || el.getAttribute("href") || "",
+        page_path: window.location.pathname,
+        page_url: window.location.href,
+        page_title: document.title,
+      };
+
+      if (window.posthog && typeof window.posthog.capture === "function") {
+        window.posthog.capture("Marketing CTA Clicked", props);
+      }
+
+      if (window.unify && typeof window.unify.track === "function") {
+        window.unify.track("Marketing CTA Clicked", props);
+      }
+    }
+
+    document.addEventListener(
+      "click",
+      function (event) {
+        var el = event.target.closest("[data-track-cta='true']");
+        if (!el) return;
+        trackButtonClick(el);
+      },
+      true,
+    );
+  })();
+</script>

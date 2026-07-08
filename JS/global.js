@@ -503,9 +503,6 @@
             url: window.location.href,
             path: window.location.pathname,
             anonymousId: anonymousId || undefined,
-          },
-          {
-            integrations: { Amplitude: false },
           }
         );
 
@@ -1181,50 +1178,6 @@
     });
   }
 
-  function scheduleAmplitudeAnalytics() {
-    const loadAmplitude = () => {
-      const apiKey = getTrackingId("amplitude");
-      if (!apiKey) return;
-      if (window.__amplitudeInitialized) return;
-      window.__amplitudeInitialized = true;
-      UnifyLoadUtils.loadScriptOnce(
-        "https://cdn.amplitude.com/libs/analytics-browser-gtm-2.8.0-min.js",
-        { async: true }
-      )
-        .then(() => {
-          if (
-            window.amplitude &&
-            typeof window.amplitude.getInstance === "function"
-          ) {
-            window.amplitude.getInstance().init(apiKey, undefined, {
-              defaultTracking: {
-                pageViews: true,
-              },
-              trackingOptions: {
-                ipAddress: false,
-              },
-            });
-          } else if (
-            window.amplitude &&
-            typeof window.amplitude.init === "function"
-          ) {
-            window.amplitude.init(apiKey);
-          } else {
-            console.warn("Amplitude SDK loaded but global API unavailable.");
-          }
-        })
-        .catch((error) => {
-          window.__amplitudeInitialized = false;
-          console.warn("Failed to load Amplitude SDK", error);
-        });
-    };
-
-    const fallbackDelay = isMobileViewport() ? 15000 : 8000;
-
-    loadAmplitude();
-    setTimeout(loadAmplitude, fallbackDelay);
-  }
-
   function setupSegmentAnalytics() {
     function isBot() {
       return (
@@ -1354,7 +1307,6 @@
   scheduleGtagMeasurement();
   scheduleClarityTracking();
   scheduleBingTracking();
-  scheduleAmplitudeAnalytics();
   setupSegmentAnalytics();
   setupTwitterPixel();
 })(window, document);
