@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.14] - 2026-07-08
+
+No release notes provided.
+
+
 ## [1.14.13] - 2026-06-01
 
 Preserve orange tint in fallback mode for nested homepage contexts.
