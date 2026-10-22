@@ -21,6 +21,14 @@ function installConsent(config, resolveRegionPolicy) {
   var gtmStarted = false;
   var posthogStarted = false;
   var posthogReady = false;
+  var posthogStub;
+  var posthogScript;
+  var posthogLoadPending = false;
+  var posthogLoadAttempts = 0;
+  var posthogRetryTimer;
+  var posthogPageSuspended = false;
+  // Retry only terminal resource errors, at the same URL, twice per page lifetime.
+  var posthogRetryDelays = [1000, 3000];
   var posthogConsent;
   var posthogIsCookieless = false;
   var measurementInput;
@@ -140,8 +148,47 @@ function installConsent(config, resolveRegionPolicy) {
     document.head.appendChild(script);
   }
 
+  function cancelPosthogRetry() {
+    if (posthogRetryTimer !== undefined) clearTimeout(posthogRetryTimer);
+    posthogRetryTimer = undefined;
+  }
+
+  function schedulePosthogRetry() {
+    if (!live || !posthogAllowed() || posthogPageSuspended || posthogReady ||
+        posthogLoadPending || posthogRetryTimer !== undefined ||
+        !posthogLoadAttempts || posthogLoadAttempts > posthogRetryDelays.length ||
+        window.posthog !== posthogStub) return;
+    posthogRetryTimer = setTimeout(function () {
+      posthogRetryTimer = undefined;
+      loadPosthogScript();
+    }, posthogRetryDelays[posthogLoadAttempts - 1]);
+  }
+
+  function loadPosthogScript() {
+    if (!live || !posthogAllowed() || posthogPageSuspended || posthogReady ||
+        posthogLoadPending || posthogLoadAttempts > posthogRetryDelays.length ||
+        window.posthog !== posthogStub || document.getElementById('unify-posthog')) return;
+    var script = document.createElement('script');
+    script.id = 'unify-posthog';
+    script.async = true;
+    script.src = 'https://us-assets.i.posthog.com/static/array.js';
+    posthogScript = script;
+    posthogLoadPending = true;
+    posthogLoadAttempts++;
+    script.onerror = function () {
+      if (posthogScript !== script || !posthogLoadPending || posthogReady) return;
+      posthogLoadPending = false;
+      // Remove only this failed owned element; never replace another initializer.
+      script.remove();
+      console.warn('Website consent: PostHog failed to load.');
+      schedulePosthogRetry();
+    };
+    document.head.appendChild(script);
+  }
+
   function syncPosthog() {
     var allowed = posthogAllowed();
+    if (!allowed) cancelPosthogRetry();
     if (!posthogReady || posthogConsent === allowed) return;
     posthogConsent = allowed;
     if (posthogIsCookieless) {
@@ -160,7 +207,8 @@ function installConsent(config, resolveRegionPolicy) {
   }
 
   function startPosthog() {
-    if (!live || posthogStarted || !posthogAllowed()) return;
+    if (!live || !posthogAllowed()) return;
+    if (posthogStarted) { schedulePosthogRetry(); return; }
     // Resolve the regional strategy before initializing this SDK, even for saved grants.
     if (regionPending && config.posthogCookieless === true) return;
     // Activation requires removal of other SDK initializers, including Segment destinations.
@@ -193,6 +241,9 @@ function installConsent(config, resolveRegionPolicy) {
       advanced_disable_feature_flags: true,
       before_send: filterPosthogEvent,
       loaded: function (sdk) {
+        if (posthogReady) return;
+        cancelPosthogRetry();
+        posthogLoadPending = false;
         window.posthog = sdk;
         posthogReady = true;
         syncPosthog();
@@ -211,11 +262,9 @@ function installConsent(config, resolveRegionPolicy) {
       options.enable_heatmaps = false;
     }
     stub._i.push([config.posthogKey, options, 'posthog']);
+    posthogStub = stub;
     window.posthog = stub;
-    appendScript('unify-posthog', 'https://us-assets.i.posthog.com/static/array.js', function () {
-      // Keep the consent choice. A later page load may retry without opting in silently.
-      console.warn('Website consent: PostHog failed to load.');
-    });
+    loadPosthogScript();
   }
 
   function startGtm() {
@@ -556,7 +605,15 @@ function installConsent(config, resolveRegionPolicy) {
   window.addEventListener('storage', function (event) {
     if (event.key === storageKey || event.key === null) refreshChoice();
   });
-  window.addEventListener('pageshow', function (event) { if (event.persisted) refreshChoice(); });
+  window.addEventListener('pagehide', function () {
+    posthogPageSuspended = true;
+    cancelPosthogRetry();
+  });
+  window.addEventListener('pageshow', function (event) {
+    posthogPageSuspended = false;
+    if (event.persisted) refreshChoice();
+    schedulePosthogRetry();
+  });
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') refreshChoice();
   });
